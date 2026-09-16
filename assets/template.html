@@ -58,7 +58,42 @@
   #cc-toggle:hover{background:#456219;border-color:#456219}
   /* ペインが開いている間は、トーストもトグルもペインの左隣に寄せる */
   body.pane-on #cc-toggle{right:calc(18px + var(--pane))}
-  body.pane-on #toast{right:calc(20px + var(--pane));max-width:min(420px,calc(100vw - 40px - var(--pane)))}
+  body.pane-on #toast{right:calc(12px + var(--pane));max-width:min(420px,calc(100vw - 40px - var(--pane)))}
+  /* ── 貼り先の案内。右ペインが開いているときだけ、右向きの矢印で「あっち」を指す ── */
+  #toast .t-foot{display:flex;align-items:center;gap:8px}
+  #toast .t-foot .arrow{display:none;color:var(--good);font-size:18px;line-height:1;animation:nudge 1s ease-in-out infinite}
+  body.pane-on #toast.to-chat .t-foot .arrow{display:inline-block}
+  body.pane-on #toast.to-chat .t-foot{color:var(--good);font-weight:700}
+  @keyframes nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(5px)}}
+  /* ── 右上の「使い方」。AI トグルの左隣 ── */
+  #howto-btn{position:fixed;top:18px;right:82px;z-index:95;padding:3px 9px;border-radius:5px;
+    border:1px solid var(--line);background:var(--surface);color:var(--sub);cursor:pointer;
+    font:700 12px/1.5 -apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif}
+  #howto-btn:hover{border-color:#779f38;color:var(--good)}
+  body.pane-on #howto-btn{right:calc(82px + var(--pane))}
+  #howto{position:fixed;inset:0;z-index:97;display:none;align-items:center;justify-content:center;
+    padding:20px;background:rgba(28,40,33,.34)}
+  #howto.on{display:flex}
+  #howto .h-panel{width:100%;max-width:860px;max-height:calc(100vh - 40px);overflow:auto;
+    border:1px solid var(--line);border-radius:12px;
+    background:var(--surface);box-shadow:0 18px 48px rgba(28,40,33,.22);padding:22px 26px}
+  #howto h3{margin:0;font-size:20px;font-weight:650}
+  #howto .lede{margin:6px 0 0;color:var(--sub);font-size:14px;line-height:1.65}
+  #howto .howto-fig{display:block;width:100%;height:auto;margin:0;border:1px solid var(--line-soft);border-radius:10px}
+  #howto .cols{display:grid;grid-template-columns:250px 1fr;gap:22px;margin-top:14px;align-items:start}
+  @media(max-width:640px){#howto .cols{grid-template-columns:1fr}}
+  #howto .free{margin-top:14px;padding:12px 16px;border-radius:10px;background:var(--surface-2);font-size:14px;line-height:1.65}
+  #howto .free b{display:block;font-size:15px;margin-bottom:4px}
+  #howto .free ul{margin:4px 0 6px;padding-left:18px;list-style:disc}
+  #howto .free li{padding:0}
+  #howto ol.steps{margin:0;padding-left:0;list-style:none;counter-reset:st}
+  #howto ol.steps>li{counter-increment:st;display:flex;gap:12px;padding:7px 0;border-top:1px solid var(--line-soft);
+    font-size:14px;line-height:1.65}
+  #howto ol.steps>li::before{content:counter(st);flex:0 0 24px;height:24px;border-radius:50%;background:var(--accent);
+    color:var(--accent-ink);font:700 12px/24px ui-monospace,monospace;text-align:center}
+  #howto li b{color:var(--ink)}
+  #howto .h-actions{margin-top:14px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+  #howto .h-note{color:var(--dim);font-size:12.5px}
   /* ── 「15秒たってもチャットが出ない？」の説明。右ペインの上に出すので z-index はトグルより上 ── */
   #cc-help{position:fixed;inset:0;z-index:97;display:none;align-items:center;justify-content:center;
     padding:20px;background:rgba(28,40,33,.34)}
@@ -251,14 +286,16 @@
                   font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
   .open-note{margin-top:12px;color:var(--dim);font-size:13px;line-height:1.8}
   .open-item{grid-template-columns:auto 1fr auto}
-  .do{opacity:0;padding:5px 10px;border:1px solid var(--line);border-radius:7px;background:var(--surface);
+  /* 指示ボタン。★押しても「実行」はされない。指示文を作ってコピーするだけ。見た目もそれに寄せる（📋 の札） */
+  .do{opacity:0;padding:5px 10px;border:1px dashed var(--line);border-radius:7px;background:var(--surface);
     color:var(--sub);font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;transition:opacity .12s}
   .open-item:hover .do,.do:focus{opacity:1}
   .do:hover{border-color:#779f38;color:var(--good)}
+  .do::before,.ins::before,.cmt::before{content:'📋 ';font-size:11px}
   @media(hover:none){.do{opacity:1}}
 
   .head-right{display:flex;align-items:center;gap:12px}
-  .cmt,.upd,.ins{padding:5px 10px;border:1px solid var(--line);border-radius:7px;background:transparent;
+  .cmt,.upd,.ins{padding:5px 10px;border:1px dashed var(--line);border-radius:7px;background:transparent;
     color:var(--dim);font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
   .cmt:hover,.upd:hover,.ins:hover{border-color:#779f38;color:var(--good);background:var(--surface)}
 
@@ -266,6 +303,7 @@
   #modal{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;
     padding:20px;background:rgba(28,40,33,.34)}
   #modal.on{display:flex}
+  body.pane-on #modal,body.pane-on #howto{right:var(--pane)}   /* 右ペインの下に潜らない */
   .m-panel{width:100%;max-width:520px;border:1px solid var(--line);border-radius:12px;background:var(--surface);
     box-shadow:0 18px 48px rgba(28,40,33,.22);padding:24px 26px}
   .m-kick{color:var(--dim);font:700 10px ui-monospace,monospace;letter-spacing:.12em}
@@ -277,13 +315,18 @@
   .m-input:focus{outline:0;border-color:#779f38}
   .m-actions{margin-top:18px;display:flex;justify-content:flex-end;gap:8px}
   .m-hint{margin-top:12px;color:var(--dim);font-size:12.5px}
+  /* 定型の札。押すと本文に入るだけ。送信はしない */
+  .m-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+  .m-chips[hidden]{display:none}
 
   /* トースト */
   #toast{position:fixed;right:20px;bottom:20px;z-index:96;max-width:min(420px,calc(100vw - 40px));
     padding:14px 16px;border:1px solid #54604d;border-radius:10px;background:var(--surface);
-    box-shadow:0 6px 22px rgba(28,40,33,.14);opacity:0;transform:translateY(8px);pointer-events:none;
+    box-shadow:0 6px 22px rgba(28,40,33,.14);opacity:0;transform:translateY(8px);
     transition:opacity .18s ease,transform .18s ease}
-  #toast.on{opacity:1;transform:none}
+  /* 隠れている間は透過（下のボタンを塞がない）、出ている間だけ押せる。押すと閉じる */
+  #toast{pointer-events:none}
+  #toast.on{opacity:1;transform:none;pointer-events:auto;cursor:pointer}
   #toast .t-head{color:var(--good);font:700 10px ui-monospace,monospace;letter-spacing:.12em}
   #toast .t-body{margin-top:8px;font-size:14.5px;line-height:1.7;color:var(--ink);
     word-break:break-word;border-left:2px solid var(--line-soft);padding-left:10px}
@@ -565,8 +608,8 @@
     </div>
 
     <div class="section tabbed t-trial">
-      <div class="sec-tab t-trial"><span class="k">TRIAL</span><span class="ja">トライ中の施策</span></div>
-      <div class="sec-right"><button class="cmt" data-id="L01" data-sec="トライ中の施策" data-loop="有料チケットの売上を、月15,000円に">コメント</button></div>
+      <div class="sec-tab t-trial"><span class="k">TRIAL</span><span class="ja">施策の実行</span></div>
+      <div class="sec-right"><button class="cmt" data-id="L01" data-sec="施策の実行" data-loop="有料チケットの売上を、月15,000円に">コメント</button></div>
       <div class="trial">
         <div class="trial-top">
           <div class="trial-name">ゲーム枠の上にロック解除ボタンを置く</div>
@@ -646,8 +689,8 @@
     </div>
 
     <div class="section tabbed t-trial">
-      <div class="sec-tab t-trial"><span class="k">TRIAL</span><span class="ja">トライ中の施策</span></div>
-      <div class="sec-right"><button class="cmt" data-id="L02" data-sec="トライ中の施策" data-loop="来た人が、次の日もまた来る割合を30%に">コメント</button></div>
+      <div class="sec-tab t-trial"><span class="k">TRIAL</span><span class="ja">施策の実行</span></div>
+      <div class="sec-right"><button class="cmt" data-id="L02" data-sec="施策の実行" data-loop="来た人が、次の日もまた来る割合を30%に">コメント</button></div>
       <div class="trial empty">
         <div class="trial-top"><div class="trial-name">施策待ちです</div></div>
         <div class="todo"><ul><li>ボトルネックの中から1つ選ぶと、ここに入ります</li></ul></div>
@@ -674,6 +717,11 @@
     <h3 class="m-title" id="m-title">ボトルネックについて</h3>
     <div class="m-sub" id="m-sub"></div>
     <textarea class="m-input" id="m-input"></textarea>
+    <div class="m-chips" id="m-chips" hidden>
+      <button type="button" data-chip="これをやって">これをやって</button>
+      <button type="button" data-chip="これは消して">これは消して</button>
+      <button type="button" data-chip="この認識は違う。">この認識は違う</button>
+    </div>
     <div class="m-actions">
       <button class="button button-secondary" id="m-cancel">キャンセル</button>
       <button class="button button-primary" id="m-ok">コピーする</button>
@@ -685,7 +733,7 @@
 <div id="toast" role="status" aria-live="polite">
   <div class="t-head">COPIED</div>
   <div class="t-body" id="toast-body"></div>
-  <div class="t-foot">AIに貼って伝えてください。</div>
+  <div class="t-foot"><span class="arrow">▶</span><span class="t-foot-text">AIに貼って伝えてください。</span></div>
 </div>
 
 <script>
@@ -694,12 +742,17 @@
     toast.classList.toggle('err', !ok);
     toast.querySelector('.t-head').textContent = ok ? 'COPIED' : 'コピーできませんでした';
     //=== foot は貼り先の案内。既定はチャット、右ペインの起動コマンドだけターミナル
-    toast.querySelector('.t-foot').textContent = ok ? (foot || 'AIに貼って伝えてください。') : '下の文をコピーして、AIに伝えてください。';
+    //=== ★貼り先がチャットなら、右ペインを開いて矢印で指す（右ペインの起動コマンドだけは foot が来るので開かない）
+    var toChat = ok && !foot;
+    toast.querySelector('.t-foot-text').textContent = ok ? (foot || '右のチャットに貼って Enter（⌘V → Enter）') : '下の文をコピーして、AIに伝えてください。';
+    toast.classList.toggle('to-chat', toChat);
+    if(toChat && window.LOOP_OPEN_PANE) window.LOOP_OPEN_PANE();
     toastBody.textContent = text;
     toast.classList.add('on');
     clearTimeout(toastT);
-    toastT = setTimeout(function(){ toast.classList.remove('on'); }, ok ? 4200 : 9000);
+    toastT = setTimeout(function(){ toast.classList.remove('on'); }, ok ? (toChat ? 7000 : 4200) : 9000);
   }
+  toast.addEventListener('click', function(e){ e.stopPropagation(); toast.classList.remove('on'); clearTimeout(toastT); });
   function copyText(text, foot){
     if(navigator.clipboard && navigator.clipboard.writeText){
       navigator.clipboard.writeText(text).then(function(){ showToast(text,true,foot); },
@@ -738,6 +791,7 @@
     mTitle.textContent = cfg.title;
     mSub.textContent = cfg.sub || '';
     mInput.placeholder = cfg.ph;
+    document.getElementById('m-chips').hidden = (cfg.kick !== 'INSTRUCTION');   //=== 札は「指示する」のときだけ
     mInput.value=''; modal.classList.add('on');
     setTimeout(function(){ mInput.focus(); }, 30);
   }
@@ -750,6 +804,10 @@
     copyText(text);
   }
   document.getElementById('m-ok').addEventListener('click', submitModal);
+  document.getElementById('m-chips').addEventListener('click', function(e){
+    var c = e.target.closest('[data-chip]'); if(!c) return;
+    mInput.value = c.getAttribute('data-chip'); mInput.focus();   //=== 入れるだけ。送信はしない
+  });
   document.getElementById('m-cancel').addEventListener('click', closeModal);
   // ★ドラッグで閉じないようにする。click は mousedown と mouseup の共通祖先で発火するため、
   //   テキストエリアで押して背景で離すと e.target が背景になり、誤って閉じてしまう。
@@ -771,7 +829,7 @@
     //=== コピーする文言は、貼った先で読める形に固定する。
     //===   ★ target は「その項目についての指示」のときだけ出す。セクションへのコメントには出さない
     //===     （画面ぜんたいを見て言っているのに、勝手に対象を狭めないため）
-    var SEC = { 'ゴール':'GOAL', 'ボトルネック':'BOTTLENECK', 'トライ中の施策':'TRIAL',
+    var SEC = { 'ゴール':'GOAL', 'ボトルネック':'BOTTLENECK', '施策の実行':'TRIAL',
                 '施策の評価':'RECORD', 'ループ一覧':'LOOPS' };
     function kickOf(sec){
       for (var k in SEC) if (sec && sec.indexOf(k) === 0) return SEC[k];
@@ -1247,7 +1305,80 @@ var LOOP_FUNNEL = {
   </div>
   <div class="cc-stack"></div>
 </div>
+<button id="howto-btn">? 使い方</button>
 <button id="cc-toggle">AI ◂</button>
+
+<!-- この画面の使い方。★仕組みは3つだけ: 見るだけの画面／指示文をコピーするボタン／貼ると AI が画面を書き換える -->
+<div id="howto" role="dialog" aria-modal="true" aria-labelledby="howto-t">
+  <div class="h-panel">
+    <h3 id="howto-t">この画面の使い方</h3>
+    <p class="lede">この画面は<b>見るだけ</b>です。ボタンを押しても何も実行されません。<b>指示文を作ってコピーする</b>だけ。それを<b>右のチャットに貼る</b>と AI が動き、この画面を書き換えます。</p>
+    <div class="cols">
+      <svg class="howto-fig" viewBox="0 0 260 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ゴール → 数字を測る → ボトルネック → 施策案から1つ選ぶ → 施策 → 期間をおいて測る → 評価 → 数字が動く → ゴールへ戻る。回すたびにゴールに近づく">
+        <defs><marker id="hw-ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#52751f"/></marker></defs>
+        <g font-family="-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif">
+          <!-- 1. ゴール（着地点。濃い色） -->
+          <rect x="70" y="10" width="150" height="60" rx="10" fill="#1c2821"/>
+          <text x="78" y="22" font-size="8" font-weight="700" fill="#8fa86a" letter-spacing=".12em" font-family="ui-monospace,monospace">GOAL</text>
+          <text x="145" y="38" text-anchor="middle" font-size="15" font-weight="700" fill="#ccef67">ゴール</text>
+          <text x="145" y="56" text-anchor="middle" font-size="11.5" fill="#dfe6d6">動かしたい数字</text>
+          <path d="M145 72 L145 104" stroke="#52751f" stroke-width="2.5" marker-end="url(#hw-ah)"/>
+          <text x="153" y="82" font-size="11" fill="#52751f">数字を測る。</text>
+          <text x="153" y="96" font-size="11" fill="#52751f">届いていない</text>
+          <!-- 2. ボトルネック -->
+          <rect x="70" y="108" width="150" height="60" rx="10" fill="#f4f6f0" stroke="#c9d3bd"/>
+          <text x="78" y="120" font-size="8" font-weight="700" fill="#8fa86a" letter-spacing=".12em" font-family="ui-monospace,monospace">BOTTLENECK</text>
+          <text x="145" y="136" text-anchor="middle" font-size="15" font-weight="700" fill="#1c2821">ボトルネック</text>
+          <text x="145" y="154" text-anchor="middle" font-size="11.5" fill="#5a6a5f">届かない理由</text>
+          <path d="M145 170 L145 202" stroke="#52751f" stroke-width="2.5" marker-end="url(#hw-ah)"/>
+          <text x="153" y="180" font-size="11" fill="#52751f">施策案から</text>
+          <text x="153" y="194" font-size="11" fill="#52751f">1つ選ぶ</text>
+          <!-- 3. 施策 -->
+          <rect x="70" y="206" width="150" height="60" rx="10" fill="#f4f6f0" stroke="#c9d3bd"/>
+          <text x="78" y="218" font-size="8" font-weight="700" fill="#8fa86a" letter-spacing=".12em" font-family="ui-monospace,monospace">TRIAL</text>
+          <text x="145" y="234" text-anchor="middle" font-size="15" font-weight="700" fill="#1c2821">施策の実行</text>
+          <text x="145" y="252" text-anchor="middle" font-size="11.5" fill="#5a6a5f">1つだけ打つ</text>
+          <path d="M145 268 L145 300" stroke="#52751f" stroke-width="2.5" marker-end="url(#hw-ah)"/>
+          <text x="153" y="278" font-size="11" fill="#52751f">期間をおいて</text>
+          <text x="153" y="292" font-size="11" fill="#52751f">測る</text>
+          <!-- 4. 評価 -->
+          <rect x="70" y="304" width="150" height="60" rx="10" fill="#f4f6f0" stroke="#c9d3bd"/>
+          <text x="78" y="316" font-size="8" font-weight="700" fill="#8fa86a" letter-spacing=".12em" font-family="ui-monospace,monospace">RECORD</text>
+          <text x="145" y="332" text-anchor="middle" font-size="15" font-weight="700" fill="#1c2821">施策の評価</text>
+          <text x="145" y="350" text-anchor="middle" font-size="11.5" fill="#5a6a5f">効いたか A〜E</text>
+          <path d="M145 366 L145 392" stroke="#52751f" stroke-width="2.5"/>
+          <text x="153" y="380" font-size="11" fill="#52751f">数字が動く</text>
+          <!-- 戻り: 下から左を通ってゴールへ -->
+          <path d="M145 392 L36 392 L36 38 L66 38" fill="none" stroke="#52751f" stroke-width="2.5" marker-end="url(#hw-ah)"/>
+          <text x="22" y="215" text-anchor="middle" font-size="11.5" font-weight="700" fill="#52751f" style="writing-mode:vertical-rl;text-orientation:upright" letter-spacing="1">回すたびにゴールに近づく</text>
+        </g>
+      </svg>
+      <div>
+    
+    <ol class="steps">
+      <li><div><b>施策を始めるには</b>、やりたい施策の「📋 指示する」を押して<b>「これをやって」</b>を選び、コピー。右のチャットに貼って Enter</div></li>
+      <li><div><b>ボタンはぜんぶ指示文を作るだけ。</b>コメント・更新・指示、どれも右のチャットに貼って初めて動きます</div></li>
+      <li><div><b>ループの期間を決めて</b>（1日1回、週1回、など）、都度「更新」を押して AI に指示。全体のステータスが更新されるので、次の施策に進みます</div></li>
+    </ol>
+    <div class="free">
+      <b>右のチャットはただの Claude Code（Codex）です。普段どおりに使いましょう</b>
+      <ul>
+        <li>（スクショを貼って）「ここをグラフにして」「この説明は短く」</li>
+        <li>「気づいたことを GOAL の下にメモとして入れて」</li>
+        <li>「施策案が弱い。別案で5案だして」</li>
+        <li>「施策のプランを別 md ファイルにまとめてから実装して」</li>
+        <li>「GA4 の API から数字取って」「Google Drive に保存して」</li>
+      </ul>
+      などなど。画面を「母艦」にして、API をつなげたり、作業を進行すると良い感じになります。
+    </div>
+      </div>
+    </div>
+    <div class="h-actions">
+      <span class="h-note">右上の「? 使い方」でいつでも開けます</span>
+      <button class="button button-primary" id="howto-close">わかった</button>
+    </div>
+  </div>
+</div>
 
 <!-- 真っ黒なときの説明。コマンドは Claude Code と codex の2つから選ぶ（どちらも同じ 7681 番） -->
 <div id="cc-help" role="dialog" aria-modal="true" aria-labelledby="cc-help-t">
@@ -1312,6 +1443,16 @@ var LOOP_FUNNEL = {
   var saved = null; try{ saved = localStorage.getItem('cc-pane'); }catch(e){}
   set(saved !== '0');                         //=== 既定は開く
   btn.addEventListener('click', function(){ set(!document.body.classList.contains('pane-on')); });
+  window.LOOP_OPEN_PANE = function(){ if(!document.body.classList.contains('pane-on')) set(true); };
+
+  //=== 「この画面の使い方」。初回だけ自動で開く（既読は localStorage。読めない環境では自動で開かない側に倒す）
+  var howto = document.getElementById('howto');
+  function howtoOn(on){ howto.classList.toggle('on', on); if(!on){ try{ localStorage.setItem('howto-seen','1'); }catch(e){} } }
+  document.getElementById('howto-btn').addEventListener('click', function(){ howtoOn(true); });
+  document.getElementById('howto-close').addEventListener('click', function(){ howtoOn(false); });
+  howto.addEventListener('click', function(e){ if(e.target === howto) howtoOn(false); });
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && howto.classList.contains('on')) howtoOn(false); });
+  try{ if(localStorage.getItem('howto-seen') !== '1') howtoOn(true); }catch(e){}
   window.addEventListener('hashchange', sync);
 
   //=== 「15秒たってもチャットが出ない？」の説明。コピー自体は [data-copy] の共通処理に任せる。

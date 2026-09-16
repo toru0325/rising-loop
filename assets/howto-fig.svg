@@ -1,0 +1,39 @@
+<svg class="howto-fig" viewBox="0 0 260 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ゴール → 数字を測る → ボトルネック → 施策案から1つ選ぶ → 施策 → 期間をおいて測る → 評価 → 数字が動く → ゴールへ戻る。回すたびにゴールに近づく">
+  <defs><marker id="hw-ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#52751f"/></marker></defs>
+  <g font-family="-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif">
+    <!-- 1. ゴール（着地点。濃い色） -->
+    <rect x="70" y="10" width="150" height="60" rx="10" fill="#1c2821"/>
+    <text x="78" y="22" font-size="8" font-weight="700" fill="#8fa86a" letter-spacing=".12em" font-family="ui-monospace,monospace">GOAL</text>
+    <text x="145" y="38" text-anchor="middle" font-size="15" font-weight="700" fill="#ccef67">ゴール</text>
+    <text x="145" y="56" text-anchor="middle" font-size="11.5" fill="#dfe6d6">動かしたい数字</text>
+    <path d="M145 72 L145 104" stroke="#52751f" stroke-width="2.5" marker-end="url(#hw-ah)"/>
+    <text x="153" y="82" font-size="11" fill="#52751f">数字を測る。</text>
+    <text x="153" y="96" font-size="11" fill="#52751f">届いていない</text>
+    <!-- 2. ボトルネック -->
+    <rect x="70" y="108" width="150" height="60" rx="10" fill="#f4f6f0" stroke="#c9d3bd"/>
+    <text x="78" y="120" font-size="8" font-weight="700" fill="#8fa86a" letter-spacing=".12em" font-family="ui-monospace,monospace">BOTTLENECK</text>
+    <text x="145" y="136" text-anchor="middle" font-size="15" font-weight="700" fill="#1c2821">ボトルネック</text>
+    <text x="145" y="154" text-anchor="middle" font-size="11.5" fill="#5a6a5f">届かない理由</text>
+    <path d="M145 170 L145 202" stroke="#52751f" stroke-width="2.5" marker-end="url(#hw-ah)"/>
+    <text x="153" y="180" font-size="11" fill="#52751f">施策案から</text>
+    <text x="153" y="194" font-size="11" fill="#52751f">1つ選ぶ</text>
+    <!-- 3. 施策 -->
+    <rect x="70" y="206" width="150" height="60" rx="10" fill="#f4f6f0" stroke="#c9d3bd"/>
+    <text x="78" y="218" font-size="8" font-weight="700" fill="#8fa86a" letter-spacing=".12em" font-family="ui-monospace,monospace">TRIAL</text>
+    <text x="145" y="234" text-anchor="middle" font-size="15" font-weight="700" fill="#1c2821">施策の実行</text>
+    <text x="145" y="252" text-anchor="middle" font-size="11.5" fill="#5a6a5f">1つだけ打つ</text>
+    <path d="M145 268 L145 300" stroke="#52751f" stroke-width="2.5" marker-end="url(#hw-ah)"/>
+    <text x="153" y="278" font-size="11" fill="#52751f">期間をおいて</text>
+    <text x="153" y="292" font-size="11" fill="#52751f">測る</text>
+    <!-- 4. 評価 -->
+    <rect x="70" y="304" width="150" height="60" rx="10" fill="#f4f6f0" stroke="#c9d3bd"/>
+    <text x="78" y="316" font-size="8" font-weight="700" fill="#8fa86a" letter-spacing=".12em" font-family="ui-monospace,monospace">RECORD</text>
+    <text x="145" y="332" text-anchor="middle" font-size="15" font-weight="700" fill="#1c2821">施策の評価</text>
+    <text x="145" y="350" text-anchor="middle" font-size="11.5" fill="#5a6a5f">効いたか A〜E</text>
+    <path d="M145 366 L145 392" stroke="#52751f" stroke-width="2.5"/>
+    <text x="153" y="380" font-size="11" fill="#52751f">数字が動く</text>
+    <!-- 戻り: 下から左を通ってゴールへ -->
+    <path d="M145 392 L36 392 L36 38 L66 38" fill="none" stroke="#52751f" stroke-width="2.5" marker-end="url(#hw-ah)"/>
+    <text x="22" y="215" text-anchor="middle" font-size="11.5" font-weight="700" fill="#52751f" style="writing-mode:vertical-rl;text-orientation:upright" letter-spacing="1">回すたびにゴールに近づく</text>
+  </g>
+</svg>
