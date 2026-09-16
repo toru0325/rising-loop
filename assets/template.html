@@ -52,12 +52,11 @@
     background:#1e1e1e;visibility:hidden}
   #cc .cc-stack iframe.on{visibility:visible}
   /*=== 右ペインの開閉。角丸の緑ボタン。▸◂ は「どちらへ動くか」を指す ===*/
-  #cc-toggle{position:fixed;top:18px;right:18px;z-index:95;padding:3px 7px;border-radius:5px;
+  #cc-toggle{padding:3px 7px;border-radius:5px;
     border:1px solid #54604d;background:var(--good);color:#fff;cursor:pointer;
     font:700 12px/1.4 -apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif}
   #cc-toggle:hover{background:#456219;border-color:#456219}
   /* ペインが開いている間は、トーストもトグルもペインの左隣に寄せる */
-  body.pane-on #cc-toggle{right:calc(18px + var(--pane))}
   body.pane-on #toast{right:calc(12px + var(--pane));max-width:min(420px,calc(100vw - 40px - var(--pane)))}
   /* ── 貼り先の案内。右ペインが開いているときだけ、右向きの矢印で「あっち」を指す ── */
   #toast .t-foot{display:flex;align-items:center;gap:8px}
@@ -66,11 +65,13 @@
   body.pane-on #toast.to-chat .t-foot{color:var(--good);font-weight:700}
   @keyframes nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(5px)}}
   /* ── 右上の「使い方」。AI トグルの左隣 ── */
-  #howto-btn{position:fixed;top:18px;right:82px;z-index:95;padding:3px 9px;border-radius:5px;
+  /* 右上のボタン2つは1つの枠に並べる（隙間 6px）。個別に right を決め打ちしない */
+  #topbtns{position:fixed;top:18px;right:18px;z-index:95;display:flex;align-items:center;gap:6px}
+  body.pane-on #topbtns{right:calc(18px + var(--pane))}
+  #howto-btn{padding:3px 9px;border-radius:5px;
     border:1px solid var(--line);background:var(--surface);color:var(--sub);cursor:pointer;
     font:700 12px/1.5 -apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif}
   #howto-btn:hover{border-color:#779f38;color:var(--good)}
-  body.pane-on #howto-btn{right:calc(82px + var(--pane))}
   #howto{position:fixed;inset:0;z-index:97;display:none;align-items:center;justify-content:center;
     padding:20px;background:rgba(28,40,33,.34)}
   #howto.on{display:flex}
@@ -1358,8 +1359,7 @@ var LOOP_FUNNEL = {
   </div>
   <div class="cc-stack"></div>
 </div>
-<button id="howto-btn">? 使い方</button>
-<button id="cc-toggle">AI ◂</button>
+<div id="topbtns"><button id="howto-btn">? 使い方</button><button id="cc-toggle">AI ◂</button></div>
 
 <!-- この画面の使い方。★仕組みは3つだけ: 見るだけの画面／指示文をコピーするボタン／貼ると AI が画面を書き換える -->
 <div id="howto" role="dialog" aria-modal="true" aria-labelledby="howto-t">
