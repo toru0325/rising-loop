@@ -9,6 +9,7 @@
 #    1. GitHub から最新の tar.gz を落として ~/.claude/skills/rising-loop を置き換える
 #    2. 置き換える前の版と新しい版を表示し、CHANGELOG の差分（新しい版の項）を見せる
 #  やらないこと:
+#    - バックアップは取らない（古い版は GitHub にある）
 #    - 各プロジェクトの loops/ には触らない（旧形式の移行は次に /rising-loop を開いたとき、スキルが提案する）
 # ═══════════════════════════════════════════════════════════════
 set -eu
@@ -48,11 +49,10 @@ if [ -L "$DEST" ]; then
   exit 0
 fi
 mkdir -p "$(dirname "$DEST")"
-if [ -d "$DEST" ]; then
-  BAK="${DEST}.bak-$(date +%Y%m%d%H%M%S)"
-  mv "$DEST" "$BAK"
-  printf '  以前の版は %s に残しました（不要なら削除してください）\n' "$BAK"
-fi
+# ★バックアップは取らない。同じ階層に残すと SKILL.md が拾われて別スキルとして登録される。古い版は GitHub にある
+rm -rf "$DEST"
+# 以前の版が残した rising-loop.bak-* も片づける（1.1.0 以前の install.sh が作っていた）
+for b in "${DEST}".bak-*; do [ -d "$b" ] && rm -rf "$b" && printf '  古いバックアップ %s を削除しました\n' "$b"; done
 rm -rf "$SRC/.git" "$SRC/_design"
 mv "$SRC" "$DEST"
 

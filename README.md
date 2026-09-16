@@ -10,7 +10,7 @@
 curl -fsSL https://raw.githubusercontent.com/toru0325/rising-loop/main/install.sh | sh
 ```
 
-- `~/.claude/skills/rising-loop` に入ります。以前の版は `rising-loop.bak-…` として残ります
+- `~/.claude/skills/rising-loop` に入ります。以前の版は上書きされます（古い版は GitHub にあります）
 - 更新すると「何が変わったか」がその場に表示されます（`CHANGELOG.md` の該当の項）
 - 新しい版があるときは、`/rising-loop` を使った際にスキルが知らせます
 
