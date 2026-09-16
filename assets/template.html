@@ -1,0 +1,1330 @@
+<!doctype html>
+<!-- ═══════════════════════════════════════════════════════════════
+     rising-loop のテンプレート
+
+     ⚠️ 中身（ループ名・数字・文章）は別プロジェクトの例です。
+        構造・CSS・JS だけ借りて、**必ず実データで置き換えてください**。
+
+     実物にコピーしたら、この注記を下の2行に差し替えること:
+     「このファイルは loops/*.md と loops/logs/*.md から作られています。
+       直接編集しないでください。md を直して、ここを更新します。」
+
+     詳しくは ../references/HTML生成.md
+     ═══════════════════════════════════════════════════════════════ -->
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ライジング・ループ — （サービス名）</title>
+<!-- ファネル図に使う。読めなかったときは段の名前と数字を文字で出す（下の drawFunnel） -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+  :root{
+    --shell:#f0f2ed; --surface:#fffefb; --surface-2:#f5f7f2; --surface-3:#eaeee7;
+    --line:#cbd2cb; --line-soft:#e1e5df;
+    --ink:#1c2821; --sub:#536159; --dim:#87918b;
+    --accent:#ccef67; --accent-ink:#203018;
+    --good:#52751f; --warn:#9b6518; --bad:#b95448;
+  }
+  *{box-sizing:border-box}
+  html{background:var(--shell)}
+  body{margin:0;padding:34px 20px 90px;min-height:100vh;color:var(--ink);background:var(--shell);
+    font-family:Inter,"Hiragino Sans","Yu Gothic UI","Yu Gothic",sans-serif;-webkit-font-smoothing:antialiased}
+  button{font:inherit}
+
+  /* ── Claude Code の右ペイン（ttyd を iframe で出すだけ。ここでは入力を受けない） ── */
+  :root{--pane:360px}
+  body.pane-on{padding-right:calc(20px + var(--pane))}
+  #cc{position:fixed;top:0;right:0;width:var(--pane);height:100vh;z-index:90;
+    display:none;flex-direction:column;background:#1e1e1e;border-left:1px solid var(--line)}
+  body.pane-on #cc{display:flex}
+  #cc .cc-bar{flex:0 0 auto;display:flex;padding:8px 10px;
+    background:#161616;border-bottom:1px solid #2a2a2a}
+  #cc .cc-ask{flex:0 0 auto;cursor:pointer;padding:3px 9px;border-radius:5px;
+    border:1px solid #3a3a3a;background:#222;color:#9aa79b;
+    font:700 11px/1.5 -apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif}
+  #cc .cc-ask:hover{border-color:#779f38;color:var(--accent)}
+  /* ★画面ごとに iframe を1枚ずつ持ち、重ねて置く。src を書き換えると接続が切れて
+     claude --resume が最初からになり10秒待たされるので、表示の切替だけで済ませる。
+     display:none だと幅が0になり、戻したとき xterm が組み直して一瞬崩れる。visibility を使う */
+  #cc .cc-stack{position:relative;flex:1 1 auto;min-height:0}
+  #cc .cc-stack iframe{position:absolute;inset:0;width:100%;height:100%;border:0;
+    background:#1e1e1e;visibility:hidden}
+  #cc .cc-stack iframe.on{visibility:visible}
+  /*=== 右ペインの開閉。角丸の緑ボタン。▸◂ は「どちらへ動くか」を指す ===*/
+  #cc-toggle{position:fixed;top:18px;right:18px;z-index:95;padding:3px 7px;border-radius:5px;
+    border:1px solid #54604d;background:var(--good);color:#fff;cursor:pointer;
+    font:700 12px/1.4 -apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif}
+  #cc-toggle:hover{background:#456219;border-color:#456219}
+  /* ペインが開いている間は、トーストもトグルもペインの左隣に寄せる */
+  body.pane-on #cc-toggle{right:calc(18px + var(--pane))}
+  body.pane-on #toast{right:calc(20px + var(--pane));max-width:min(420px,calc(100vw - 40px - var(--pane)))}
+  /* ── 「15秒たってもチャットが出ない？」の説明。右ペインの上に出すので z-index はトグルより上 ── */
+  #cc-help{position:fixed;inset:0;z-index:97;display:none;align-items:center;justify-content:center;
+    padding:20px;background:rgba(28,40,33,.34)}
+  #cc-help.on{display:flex}
+  #cc-help .h-panel{width:100%;max-width:460px;border:1px solid var(--line);border-radius:12px;
+    background:var(--surface);box-shadow:0 18px 48px rgba(28,40,33,.22);padding:22px 24px}
+  #cc-help h3{margin:0;font-size:19px;font-weight:650}
+  #cc-help p{margin:11px 0 0;font-size:14px;line-height:1.75;color:var(--sub)}
+  #cc-help .h-step{margin-top:16px;font-size:13.5px;font-weight:700}
+  #cc-help .h-cmd{display:flex;align-items:center;gap:10px;width:100%;margin-top:7px;padding:9px 11px;
+    border:1px solid var(--line);border-radius:8px;background:var(--surface-2);cursor:pointer;text-align:left}
+  #cc-help .h-cmd:hover{border-color:#779f38;background:#f2f6ec}
+  #cc-help .h-cmd code{flex:1;min-width:0;white-space:pre-wrap;overflow-wrap:anywhere;
+    font:12px/1.6 ui-monospace,Menlo,monospace;color:var(--ink)}
+  #cc-help .h-for{flex:0 0 auto;color:var(--dim);font-size:11.5px;font-weight:700}
+  #cc-help .h-actions{margin-top:18px;display:flex;justify-content:flex-end}
+
+  .page{max-width:880px;margin:0 auto}
+
+  .screen{display:none}
+  .screen.active{display:block;animation:reveal .18s ease both}
+  @keyframes reveal{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+
+  .flow{border:1px solid var(--line);background:var(--surface)}
+  .section{padding:29px 32px;border-bottom:1px solid var(--line)}
+  .section:last-child{border-bottom:0}
+  .section-head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px}
+  /*=== セクションの見出し。区切り線の上に乗る塗りのタブが、そのまま見出しを兼ねる。
+       色でセクションの種類が分かるようにしてある（ループを行き来しても同じ色が同じ意味）===*/
+  .section{position:relative}
+  .section.tabbed{padding-top:62px}
+  /*=== 右端を斜めに切った台形。文字が欠けないよう右の余白を広くとる ===*/
+  /*=== 3つの文字を縦中央で揃える。line-height をそれぞれ 1 にしないと、
+       行送りの差だけ英字が上にずれる ===*/
+  .sec-tab{position:absolute;top:0;left:0;display:flex;align-items:center;gap:12px;
+    padding:14px 36px 14px 20px;z-index:1;line-height:1;
+    /*=== ⚠️ clip-path と filter を同じ要素に置くと、影が clip に切られて消える。
+         形（台形）は ::before に、影は本体に分ける ===*/
+    filter:drop-shadow(1px 2px 3px rgba(28,40,33,.16))}
+  .sec-tab::before{content:"";position:absolute;inset:0;z-index:-1;background:var(--tt);
+    clip-path:polygon(0 0,100% 0,calc(100% - 18px) 100%,0 100%)}
+  .sec-tab .k{font:700 10.5px/1 ui-monospace,monospace;letter-spacing:.14em;position:relative;top:1px}
+  .sec-tab .ja{font-size:20px;line-height:1;font-weight:700;letter-spacing:.02em}
+  .sec-tab .lid{color:inherit;opacity:.7;font-weight:400;line-height:1;position:relative;top:1px}
+  /*=== 二層。色はセクションの上端に引く4pxの線が持ち、タブ自体は薄い地に濃い文字。
+       線はセクションの幅いっぱいに伸ばして、どこからどこまでが1つかを示す ===*/
+  .section.t-goal      {--tc:#3f5a72; --tt:#eaeff4; --td:#33495c}
+  .section.t-bottleneck{--tc:#9b6518; --tt:#f7efe2; --td:#7d5214}
+  .section.t-trial     {--tc:#52751f; --tt:#eef4e4; --td:#3f5c17}
+  .section.t-record    {--tc:#46534b; --tt:#eef1ec; --td:#2c3a32}
+  .section.t-loops     {--tc:#74827a; --tt:#eef1ec; --td:#3f4b44}
+  .section.tabbed,
+  .section.t-goal{border-top:4px solid var(--tc)}
+  .sec-tab{color:var(--td)}
+  .sec-tab .k{opacity:.62}
+  .sec-right{position:absolute;right:30px;top:15px;display:flex;align-items:center;gap:12px;z-index:1}
+  /*=== ループ名は長いのでタブに入れず、タブの下の大見出しに残す ===*/
+  .goal-name{margin-top:6px}
+  .section-title{margin:7px 0 0;font-size:24px;line-height:1.45;font-weight:650;letter-spacing:.01em}
+  .kicker{color:var(--dim);font:700 11px ui-monospace,monospace;letter-spacing:.12em}
+  .kicker.alert{color:var(--warn)}
+  .lid{color:var(--dim);font-weight:400;letter-spacing:.04em}
+  .quiet-button{padding:4px 0;border:0;color:var(--dim);background:transparent;font-size:12.5px;cursor:pointer}
+  .quiet-button:hover{color:var(--ink)}
+
+  /* 戻る */
+  .back{display:inline-flex;align-items:center;gap:7px;margin:0 0 10px;padding:5px 0;border:0;background:transparent;
+    color:var(--dim);font-size:14px;cursor:pointer;text-align:left;line-height:1.6}
+  .back:hover{color:var(--good)}
+  .back .arw{font:11px ui-monospace,monospace}
+
+  /*=== 累計売上。金額を持つループの合算 ===*/
+  /* ⚠️ 状態ピルの「評価中」も class="st rev" なので、セレクタを絞らないと
+     そちらにも border-top と余白が当たる（2026-09-10 に一覧で線が出た） */
+  .section > .rev{margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}
+  .rev-total{display:flex;align-items:baseline;gap:12px;color:var(--dim);font-size:12.5px}
+  .rev-total b{color:var(--good);font:500 30px ui-monospace,monospace;letter-spacing:-.02em}
+  .rev-break{margin-top:7px;color:var(--sub);font-size:14.5px;line-height:1.7}
+  .rev-note{margin-top:5px;color:var(--dim);font-size:12.5px;line-height:1.7}
+
+  /* 一覧 */
+  .loop-list{display:grid;gap:1px;background:var(--line-soft);border:1px solid var(--line-soft);margin-top:20px}
+  .loop-row{display:grid;grid-template-columns:1fr 168px 100px 18px;gap:16px;padding:17px 18px;background:var(--surface);
+    align-items:center;border:0;width:100%;text-align:left;cursor:pointer;font:inherit;color:inherit}
+  .loop-row:hover{background:#f7faf2}
+  .loop-row.dimmed{background:var(--surface-2)}
+  .loop-row.dimmed:hover{background:var(--surface-3)}
+  .loop-name{font-size:17px;font-weight:650;line-height:1.5}
+  /*=== 一覧のタイトル頭に付くID。タイトルは言い換わるがIDは変わらないので、これが目印になる ===*/
+  .lid-pill{display:inline-block;vertical-align:2px;margin-right:9px;padding:3px 9px;border-radius:999px;
+    border:1px solid #74827a;color:#fff;background:#74827a;
+    font:700 11px ui-monospace,monospace;letter-spacing:.06em}
+  .loop-sub{margin-top:6px;color:var(--dim);font-size:14px;line-height:1.6}
+  /*=== 「いま / 目標」。いまの値だけ大きく色を付け、目標は添えるだけにする ===*/
+  .loop-num{font:500 13.5px ui-monospace,monospace;color:var(--dim);white-space:nowrap;line-height:1.4}
+  .loop-num b{color:var(--good);font:500 23px/1 ui-monospace,monospace;letter-spacing:-.02em;margin-right:3px}
+  /*=== 一覧に出す進捗バー。GOAL の .progress-track を小さくしたもの ===*/
+  .loop-bar{height:9px;margin-top:9px;border:1px solid #8d9891;background:#f5f6f2;overflow:hidden}
+  .loop-bar i{display:block;height:100%;
+    background:radial-gradient(circle at 1px 1px,rgba(255,255,255,.58) .8px,transparent .9px),#315e46;
+    background-size:3px 3px}
+  .chev{color:var(--dim);font:12px ui-monospace,monospace;text-align:right}
+  /*=== 一覧のステータス。★件数を数えるだけで、状態の enum は作らない。
+       実行中＝TRIAL にあるもの／評価中＝RECORD にあって TRIAL に残っていないもの。
+       色は8pxの点だけに持たせ、数字を大きくする（遠目には数字が読めればいい）===*/
+  .state{min-width:0}
+  .state .st{display:flex;align-items:center;gap:6px;margin-top:6px;white-space:nowrap}
+  .state .st:first-child{margin-top:0}
+  .state .st-dot{flex:0 0 auto;width:8px;height:8px;border-radius:50%}
+  .state .st-n{font:700 17px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:-.02em}
+  .state .st-lb{font-size:11px;font-weight:600;color:var(--dim)}
+  .state .run .st-dot{background:var(--good)}
+  .state .run .st-n{color:var(--good)}
+  .state .rev .st-dot{background:var(--warn)}
+  .state .rev .st-n{color:var(--warn)}
+  .state .idle{color:var(--dim);font-size:12px;font-weight:600}
+  .state .idle .st-dot{background:transparent;border:1px solid var(--line)}
+
+  /* GOAL */
+  .goal-name{margin:9px 0 0;font-size:31px;line-height:1.4;font-weight:650;letter-spacing:.01em}
+  .goal-name.sm{font-size:26.5px}
+  .goal-numbers{margin-top:23px;display:grid;grid-template-columns:auto 1fr auto;align-items:end;gap:18px}
+  .number-block{min-width:84px}
+  .number-label{color:var(--dim);font-size:12.5px}
+  .number{margin-top:6px;font:500 36px ui-monospace,monospace;letter-spacing:-.03em}
+  /*=== 件数の下に添える金額。単価を持つループだけ出る（いまは L01 のみ）===*/
+  .number-money{margin-top:3px;color:var(--good);font:500 15px ui-monospace,monospace}
+  .money-note{margin:8px 0 0;color:var(--dim);font-size:12.5px;line-height:1.7}
+  .number small{font:500 14px inherit;color:var(--sub)}
+  .progress-wrap{padding-bottom:6px}
+  .progress-track{height:18px;overflow:hidden;border:1px solid #8d9891;background:#f5f6f2}
+  .progress-fill{transition:width .25s ease-out;height:100%;background:radial-gradient(circle at 1px 1px,rgba(255,255,255,.58) .8px,transparent .9px),#315e46;background-size:3px 3px}
+  .progress-meta{margin-top:7px;display:flex;justify-content:space-between;color:var(--dim);font:11px ui-monospace,monospace}
+  .forecast{margin-top:19px;color:var(--sub);font-size:17px;line-height:1.75}
+  .forecast strong{color:var(--ink);font-weight:600}
+
+  /* BOTTLENECK */
+  .sub-head{margin-top:26px;color:var(--sub);font-size:15px;font-weight:650}
+  /*=== 横向きファネル（案F）。高さは実データの対数で、先細りがそのまま落ち方になる ===*/
+  .funnel-f{margin-top:14px}
+  .funnel-f svg{display:block}
+  .funnel-f .fallback{display:flex;flex-wrap:wrap;gap:6px 18px;padding:14px 0}
+  .funnel-f .fallback b{font:500 19px ui-monospace,monospace;margin-left:6px}
+  .funnel-f .fallback span{color:var(--sub);font-size:14px}
+
+  .story{margin-top:14px;padding:16px 18px;border-left:2px solid #bd852f;color:var(--sub);background:var(--surface-2);font-size:15px;line-height:1.9}
+  .story b{color:var(--ink);font-weight:600}
+  .story ul{margin:0;padding-left:0;list-style:none}
+  .story ul li + li{margin-top:2px}
+
+  .split{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line-soft);border:1px solid var(--line-soft)}
+  .split-col{background:var(--surface);padding:12px 14px}
+  .split-title{color:var(--dim);font-size:12.5px;margin-bottom:8px}
+  .split-row{display:grid;grid-template-columns:1fr auto auto;gap:10px;padding:6px 0;font-size:14px;align-items:baseline}
+  .split-row span:nth-child(2){color:var(--dim);font-family:ui-monospace,monospace;font-size:12.5px}
+  .split-row b{min-width:40px;text-align:right;font:600 13px ui-monospace,monospace}
+  .split-row.bad b{color:var(--bad)}
+
+  .open-list{margin-top:14px;border-top:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft)}
+  .open-item{padding:13px 2px;border-bottom:1px solid var(--line-soft);font-size:15.5px;line-height:1.7;
+    display:grid;grid-template-columns:auto 1fr;gap:13px;align-items:start}
+  .open-item:last-child{border-bottom:0}
+  /*=== 施策案の左に置く番号のピル。「3番やって」と口で言えるように番号を残す ===*/
+  /*=== 幅を決め打ちしない。中身に合わせて縮む（決め打ちだと横に間延びする）===*/
+  .idea-pill{display:inline-block;padding:4px 13px;border-radius:999px;
+    border:1px solid #54604d;background:var(--good);color:#fff;
+    font:700 13px/1.5 -apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif;
+    white-space:nowrap;position:relative;top:1px}
+  .idea-pill .bulb{margin-right:5px;font-size:12px}
+  .open-item.active{font-weight:600}
+  /* --- GOAL の履歴（計測日・折れ線・その区間の記録） --- */
+  .hist{margin-top:14px;border-top:1px solid var(--line-soft);padding-top:12px}
+  .hist-top{display:flex;align-items:center;gap:10px}
+  .hist-note{margin-left:auto;font-size:13px;color:var(--dim)}
+  .hist-chart{margin-top:10px}
+  .hist-chart svg{display:block}
+  .hist-report{margin-top:12px}
+  .hist-report .hr-title{font-size:12.5px;letter-spacing:.08em;color:var(--dim);font-weight:700}
+  .hist-report .hr-when{margin-left:8px;font-weight:400;letter-spacing:0;font-size:12px}
+  .hist-recs{margin-top:12px;padding:14px 17px;border:1px solid var(--line-soft);
+             background:var(--surface-2)}
+  .hist-recs:empty{display:none}
+  .hist-recs .hr-head{font-size:12.5px;letter-spacing:.08em;color:var(--dim);
+                      font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .hist-recs .hr-head + ul + .hr-head{margin-top:12px;padding-top:12px;
+                                      border-top:1px solid var(--line-soft);display:block}
+  .hist-recs ul{margin:6px 0 0;padding-left:0;list-style:none}
+  .hist-recs li{display:flex;gap:12px;font-size:14.5px;color:var(--sub);padding:2px 0}
+  .hist-recs li b{flex:0 0 34px;color:var(--dim);font-weight:400;
+                  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
+  .open-note{margin-top:12px;color:var(--dim);font-size:13px;line-height:1.8}
+  .open-item{grid-template-columns:auto 1fr auto}
+  .do{opacity:0;padding:5px 10px;border:1px solid var(--line);border-radius:7px;background:var(--surface);
+    color:var(--sub);font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;transition:opacity .12s}
+  .open-item:hover .do,.do:focus{opacity:1}
+  .do:hover{border-color:#779f38;color:var(--good)}
+  @media(hover:none){.do{opacity:1}}
+
+  .head-right{display:flex;align-items:center;gap:12px}
+  .cmt,.upd,.ins{padding:5px 10px;border:1px solid var(--line);border-radius:7px;background:transparent;
+    color:var(--dim);font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+  .cmt:hover,.upd:hover,.ins:hover{border-color:#779f38;color:var(--good);background:var(--surface)}
+
+  /* コメント入力 */
+  #modal{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;
+    padding:20px;background:rgba(28,40,33,.34)}
+  #modal.on{display:flex}
+  .m-panel{width:100%;max-width:520px;border:1px solid var(--line);border-radius:12px;background:var(--surface);
+    box-shadow:0 18px 48px rgba(28,40,33,.22);padding:24px 26px}
+  .m-kick{color:var(--dim);font:700 10px ui-monospace,monospace;letter-spacing:.12em}
+  .m-title{margin:8px 0 0;font-size:22px;font-weight:650;line-height:1.5}
+  .m-sub{margin-top:8px;color:var(--dim);font-size:14px;line-height:1.7}
+  .m-input{width:100%;margin-top:16px;padding:13px 14px;min-height:104px;resize:vertical;
+    border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);
+    font-size:15.5px;line-height:1.8}
+  .m-input:focus{outline:0;border-color:#779f38}
+  .m-actions{margin-top:18px;display:flex;justify-content:flex-end;gap:8px}
+  .m-hint{margin-top:12px;color:var(--dim);font-size:12.5px}
+
+  /* トースト */
+  #toast{position:fixed;right:20px;bottom:20px;z-index:96;max-width:min(420px,calc(100vw - 40px));
+    padding:14px 16px;border:1px solid #54604d;border-radius:10px;background:var(--surface);
+    box-shadow:0 6px 22px rgba(28,40,33,.14);opacity:0;transform:translateY(8px);pointer-events:none;
+    transition:opacity .18s ease,transform .18s ease}
+  #toast.on{opacity:1;transform:none}
+  #toast .t-head{color:var(--good);font:700 10px ui-monospace,monospace;letter-spacing:.12em}
+  #toast .t-body{margin-top:8px;font-size:14.5px;line-height:1.7;color:var(--ink);
+    word-break:break-word;border-left:2px solid var(--line-soft);padding-left:10px}
+  #toast .t-foot{margin-top:9px;color:var(--dim);font-size:12.5px}
+  #toast.err{border-color:#7d6a44}
+  #toast.err .t-head{color:var(--warn)}
+
+  /* TRIAL */
+  .trial{margin-top:18px;padding:17px 19px;border:1px solid var(--line-soft);background:var(--surface-2)}
+  .trial.empty{border-style:dashed;background:transparent}
+  .trial-top{display:flex;justify-content:space-between;align-items:baseline;gap:16px}
+  .trial-name{font-size:18.5px;font-weight:650}
+  .trial-status{color:var(--warn);font-size:12.5px;font-weight:700;white-space:nowrap}
+  .trial-name.dim{color:var(--dim);font-weight:500}
+  .todo{margin-top:14px;padding-top:12px;border-top:1px solid var(--line-soft)}
+  .todo-title{color:var(--dim);font-size:12.5px}
+  .todo ul{margin:8px 0 0;padding-left:16px;color:var(--sub);font-size:15px;line-height:1.9}
+  .actions{margin-top:18px;display:flex;justify-content:flex-end;gap:8px}
+  .button{height:40px;padding:0 17px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}
+  .button-primary{border:1px solid var(--accent);color:var(--accent-ink);background:var(--accent)}
+  .button-primary:hover{background:#e5ff9d}
+  .button-secondary{border:1px solid var(--line);color:var(--ink);background:transparent}
+  .button-secondary:hover{background:var(--surface-3)}
+
+  /* RECORD */
+  .rec{margin-top:16px;display:grid;gap:1px;background:var(--line-soft);border:1px solid var(--line-soft)}
+  .rec-row{display:grid;grid-template-columns:112px 1fr auto;gap:14px;padding:12px 14px;background:var(--surface);font-size:15px;line-height:1.6;align-items:baseline}
+  .rec-v{justify-self:start;display:inline-block;padding:3px 10px;border-radius:999px;
+         font:11.5px/1.5 -apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif;font-weight:700;
+         border:1px solid var(--line);color:var(--sub);background:var(--shell);white-space:nowrap}
+  .rec-v.good{border-color:#54604d;color:#fff;background:var(--good)}
+  .rec-v.warn{border-color:#7d6a44;color:#fff;background:var(--warn)}
+  .rec-v.bad{border-color:#8e4034;color:#fff;background:var(--bad)}
+  .rec-v.log{border-color:var(--line);color:var(--sub);background:var(--shell)}
+  .rec-v.todo{border-color:#3f5a72;color:#fff;background:#4a6b88}
+  .rec-date{color:var(--dim);font:11px ui-monospace,monospace}
+  .empty-copy{margin:16px 0 0;color:var(--sub);font-size:16px;line-height:1.85}
+  .empty-copy span{color:var(--dim)}
+
+
+  @media(max-width:760px){
+    .section{padding:24px 20px}
+    /* ★狭くても横並びは保つ。詰めるだけ。縦積みは 400px 以下でだけ行う */
+    .funnel{gap:2px}
+    .stage{min-width:0}
+    .stage-name{font-size:12.5px;line-height:1.4}
+    .stage-value{margin-top:5px;font-size:19.5px}
+    .trans{padding-top:16px}
+    .trans-arrow{font-size:14px}
+    .trans-value{font-size:12px}
+    .goal-numbers{grid-template-columns:1fr}
+    .split{grid-template-columns:1fr}
+    .loop-row{grid-template-columns:1fr auto;gap:10px}
+    .loop-num{display:none}
+  }
+
+  @media(max-width:400px){
+    /* ここで初めて縦積み。段階は「名前 … 数字」の1行、間に「↓ 53%」を挟む */
+    .funnel{grid-template-columns:1fr;gap:0}
+    .stage,.stage:first-child,.stage:last-child{
+      display:flex;align-items:baseline;justify-content:space-between;gap:14px;
+      padding:9px 0;text-align:left;border-bottom:1px solid var(--line-soft)}
+    .stage:last-child{border-bottom:0}
+    .stage-name{font-size:15px}
+    .stage-value{margin-top:0;font-size:23px}
+    .trans,.trans:first-child{display:flex;align-items:center;gap:9px;padding:6px 0 6px 4px;text-align:left}
+    .trans-arrow{display:inline-block;transform:rotate(90deg);font-size:15px}
+    .trans-value{margin-top:0;font-size:12.5px}
+  }
+
+  /* RECORD: 1施策1項目。評価日と比較根拠を一緒に読む */
+  .record-set{margin-top:16px;min-width:0}
+  .record-item{padding:22px 0;border-top:1px solid var(--line);font-size:15px;line-height:1.8;overflow-wrap:anywhere}
+  .record-item:first-of-type{border-top:0;padding-top:0}
+  .record-top{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
+  .record-top h3{margin:0;font-size:20px;font-weight:700;line-height:1.6;color:var(--ink);flex:1 1 260px}
+  .record-item p{margin:10px 0;color:var(--sub)}
+  .record-item .record-meta{font-size:13px;color:var(--sub)}
+  .record-item .record-assessment{font-size:16px;font-weight:700;color:var(--ink)}
+  .record-comment{margin-top:4px}
+  /*=== 出来事のLOG。file:// では fetch が CORS で弾かれるので iframe で読む。
+       .md はブラウザがそのままテキストで出す（＝装飾なし）。
+       ⚠️ 高さの自動調整は file:// だと script が入れないので固定・中でスクロール ===*/
+  .record-log{margin-top:18px;border-top:1px solid var(--line-soft);padding-top:14px}
+  .record-log > summary{cursor:pointer;color:var(--ink);font-size:14px;list-style:none;
+    display:flex;align-items:center;gap:8px}
+  .record-log > summary::-webkit-details-marker{display:none}
+  .record-log > summary::before{content:"\25B8";color:var(--dim);font:11px ui-monospace,monospace}
+  .record-log[open] > summary::before{content:"\25BE"}
+  .record-log > summary span{text-decoration:underline;text-underline-offset:3px}
+  .record-log > summary a{margin-left:auto;color:var(--dim);font-size:12.5px;text-decoration:none}
+  .record-log > summary a:hover{color:var(--ink);text-decoration:underline}
+  .record-log iframe{display:block;width:100%;height:340px;margin-top:12px;
+    border:1px solid var(--line-soft);background:var(--surface)}
+  /*=== 施策の評価の図。CSSの棒だけで描く（幅が変わっても崩れず、再描画の配線が要らない）===*/
+  .record-viz{margin:14px 0 0;padding:14px 16px;border:1px solid var(--line-soft);background:var(--surface-2)}
+  .rv-title{color:var(--dim);font:700 11.5px ui-monospace,monospace;letter-spacing:.08em}
+  .rv-title em{font-style:normal;color:var(--warn);margin-left:9px;letter-spacing:0}
+  .rv-bars{display:flex;align-items:flex-end;gap:5px;height:74px;margin-top:14px}
+  .rv-col{flex:1 1 0;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%}
+  .rv-col i{display:block;width:100%;min-height:2px;background:#a8b79a}
+  .rv-col.on i{background:var(--good)}
+  .rv-col.alt i{background:repeating-linear-gradient(45deg,#7d6a44,#7d6a44 3px,#c9b78e 3px,#c9b78e 6px)}
+  .rv-col b{font:600 12px ui-monospace,monospace;color:var(--ink);margin-bottom:4px}
+  .rv-labels{display:flex;gap:5px;margin-top:6px}
+  .rv-labels span{flex:1 1 0;text-align:center;color:var(--dim);font:11px ui-monospace,monospace;white-space:nowrap}
+  .rv-labels span.on{color:var(--warn);font-weight:700}
+  .rv-h{margin-top:13px;display:grid;grid-template-columns:auto 1fr auto;gap:7px 11px;align-items:center}
+  .rv-h .k{color:var(--sub);font-size:13px;white-space:nowrap}
+  .rv-h .t{height:13px;background:#e4e9dc}
+  .rv-h .t i{display:block;height:100%;background:var(--good)}
+  .rv-h .t i.dim{background:#a8b79a}
+  .rv-h .v{font:600 13px ui-monospace,monospace;color:var(--ink);white-space:nowrap}
+  .rv-foot{margin-top:11px;color:var(--sub);font-size:13px;line-height:1.7}
+  .rv-foot b{color:var(--ink);font:600 14px ui-monospace,monospace}
+  /*=== 現在の評価。図より前に置き、根拠を後ろに続ける。
+       点数は「狙いに対してどれだけ達成したか」の10点満点。判定できないものは — ===*/
+  .record-verdict{margin:12px 0 0;display:grid;grid-template-columns:126px 1fr;
+    background:var(--surface-2)}
+  /*=== A〜E と - の5段階。濃い地に白抜きで、ここが最初に目に入るようにする。
+       段階の意味を下に1語で添えるので、凡例を別に置かなくてよい。
+       色は A（緑）→ E（赤）へ寄せ、明るさは揃える。未評価だけ薄い地＋濃い字にして、
+       「まだ評価が付いていない」ことを色で分ける ===*/
+  .rvd-score{display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:16px 8px;background:var(--warn);color:#fff}
+  .rvd-score.g-a{background:#4a6b1c}
+  .rvd-score.g-b{background:#6b8536}
+  .rvd-score.g-c{background:#9b6518}
+  .rvd-score.g-d{background:#a9522c}
+  .rvd-score.g-e{background:#a8443a}
+  .rvd-score.g-none{background:#e6eae2;color:var(--dim)}
+  .rvd-score.g-none i{opacity:1}
+  .rvd-score b{font:600 46px/1 ui-monospace,monospace;letter-spacing:-.02em}
+  .rvd-score i{margin-top:7px;font:700 12px/1.4 -apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif;
+    font-style:normal;opacity:.82;white-space:nowrap}
+  .rvd-body{padding:16px 18px;min-width:0}
+  .rvd-k{display:block;margin-bottom:6px;color:var(--dim);
+    font:700 11px ui-monospace,monospace;letter-spacing:.1em}
+  .rvd-body p{margin:0;font-size:17px;font-weight:700;color:var(--ink);line-height:1.7}
+  @media(max-width:600px){
+    .record-verdict{grid-template-columns:96px 1fr}
+    .rvd-score b{font-size:36px} .rvd-score i{font-size:11px}
+    .rvd-body{padding:13px 14px} .rvd-body p{font-size:16px}
+  }
+  /*=== 事前の予想と判定日。★後から数字を見て「効いた」と言えてしまうのを防ぐため、
+       判定の場で手元に無いと困る。トグルに隠さず、評価のすぐ下に出す ===*/
+  .record-forecast{margin:9px 0 0;display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;
+    color:var(--sub);font-size:14px;line-height:1.7}
+  .record-forecast > span{padding:2px 9px;border-radius:999px;border:1px solid var(--line);
+    background:var(--shell);color:var(--dim);font:700 11px ui-monospace,monospace;letter-spacing:.08em}
+  .record-forecast.none{color:var(--dim)}
+  .record-forecast em{font-style:normal;color:var(--dim);font-size:13px}
+  .record-warn{margin:7px 0 0;color:var(--warn);font-size:13.5px;line-height:1.75}
+  @media(max-width:600px){ .rv-col b{font-size:10.5px} .rv-labels span{font-size:9.5px} }
+  .lede{margin:0;font-size:16.5px;font-weight:700;color:var(--ink);line-height:1.7}
+  .sub-lede{margin:5px 0 0;color:var(--sub);font-size:14px;line-height:1.8}
+  .fold{margin-top:10px;color:var(--sub);font-size:13px;line-height:1.75}
+  .fold>summary{cursor:pointer;color:var(--dim);font-size:12.5px;list-style:none;
+    display:inline-flex;align-items:center;gap:6px}
+  .fold>summary::-webkit-details-marker{display:none}
+  .fold>summary::before{content:"\25B8";color:var(--dim);font:11px ui-monospace,monospace}
+  .fold[open]>summary::before{content:"\25BE"}
+  .fold .fd-b{margin-top:7px;padding-left:2px}
+  .fold b{color:var(--ink);font-weight:600}
+  /*=== 日ごとの数列は文章に埋めず、そろえた表にする ===*/
+  .dtbl{margin-top:8px;display:grid;grid-template-columns:auto repeat(3,1fr);
+    gap:2px 12px;font:12.5px ui-monospace,monospace;color:var(--sub)}
+  .dtbl span{white-space:nowrap;text-align:right}
+  .dtbl span:nth-child(4n+1){text-align:left}
+  .dtbl .hd{color:var(--dim);font-size:11px}
+  .open-item .why{display:block;margin-top:3px;color:var(--dim);
+    font-size:12.5px;line-height:1.6;font-weight:400}
+  .whale .wh-l{margin:6px 0 0;color:var(--ink);font-size:14px;font-weight:600}
+  .whale p{margin:3px 0 0}
+</style>
+</head>
+<body>
+<div class="page">
+<!-- ═════════ 一覧 ═════════ -->
+<section class="screen" id="s-list">
+  <div class="flow">
+    <div class="section">
+      <div class="kicker">RISING LOOP</div>
+      <div class="section-head" style="margin-top:7px">
+        <h1 class="goal-name" style="margin-top:0">（サービス名）ライジング・ループ</h1>
+        <div class="head-right">
+          <button class="upd" data-upd="all">全ループ更新</button>
+          <button class="cmt" data-sec="ループ一覧" data-loop="ループ一覧">コメント</button>
+        </div>
+      </div>
+      <!--=== 複数ループを合成した数字を置く場所。無いプロジェクトはこのブロックごと消す ===-->
+      <div class="rev">
+        <div class="rev-total">累計売上 <b>2,313円</b></div>
+        <div class="rev-break">有料チケット 1,750円（7件 × 250円） ＋ 広告 563円</div>
+        <div class="rev-note">券は9/7まで・広告は9/6まで（配信レポートが手作業のため）・手数料を引く前</div>
+      </div>
+    </div>
+    <div class="section tabbed t-loops">
+      <div class="sec-tab t-loops"><span class="k">LOOPS</span><span class="ja">ループ一覧</span></div>
+      <div class="loop-list">
+        <button class="loop-row" data-go="s-L01">
+          <div>
+            <div class="loop-name"><span class="lid-pill">L01</span>有料チケットの売上を、月 15,000円 に</div>
+            <div class="loop-sub">鍵をタップする人は増えているのに、買う人が増えていない<br>施策評価：購入は発生。ボタン単独の効果は評価待ち。</div>
+          </div>
+          <div class="loop-num"><b>1,750</b> / 15,000円<div class="loop-bar"><i style="width:12%"></i></div></div>
+          <div class="state"><div class="st run"><span class="st-dot"></span><span class="st-n">1</span><span class="st-lb">実行中</span></div></div>
+          <div class="chev">→</div>
+        </button>
+
+        <button class="loop-row" data-go="s-L02">
+          <div>
+            <div class="loop-name"><span class="lid-pill">L02</span>来た人が、次の日もまた来る割合を 30% に</div>
+            <div class="loop-sub">初日ごとの振れが極端（18/4/7/19/14%）。翌日が揃った3日なら14%</div>
+          </div>
+          <div class="loop-num"><b>11</b> / 30%<div class="loop-bar"><i style="width:37%"></i></div></div>
+          <div class="state"><div class="st idle"><span class="st-dot"></span>施策待ち</div></div>
+          <div class="chev">→</div>
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ L01（数字型・施策あり）═════════ -->
+<section class="screen" id="s-L01">
+  <button class="back" data-go="s-list"><span class="arw">←</span> ループ一覧</button>
+  <div class="flow">
+    <div class="section tabbed t-goal">
+      <div class="sec-tab t-goal"><span class="k">GOAL</span><span class="ja">ゴール</span><span class="lid">· L01</span></div>
+      <div class="sec-right"><button class="upd" data-upd="L01">更新</button><button class="cmt" data-id="L01" data-sec="ゴール" data-loop="有料チケットの売上を、月15,000円に">コメント</button></div>
+      <h1 class="goal-name">有料チケットの売上を、月 15,000円 に</h1>
+      <div class="goal-numbers">
+        <div class="number-block"><div class="number-label" data-goal-when="L01">いま</div><div class="number"><span data-goal-now="L01">1,750</span><small> 円</small></div><div class="number-money" data-goal-money="L01">7件</div></div>
+        <div class="progress-wrap">
+          <div class="progress-track"><div class="progress-fill" data-goal-fill="L01" style="width:12%"></div></div>
+          <div class="progress-meta"><span>はじめた頃 0円</span><span data-goal-diff="L01">—</span></div>
+        </div>
+        <div class="number-block" style="text-align:right"><div class="number-label">目標</div><div class="number">15,000<small> 円</small></div><div class="number-money">60件</div></div>
+      </div>
+      <div class="hist" data-hist="L01">
+        <div class="hist-top">
+          <span class="hist-note"></span>
+        </div>
+        <div class="hist-chart"></div>
+        <div class="hist-report">
+          <div class="hr-title">レポート <span class="hr-when">窓 過去30日（実データは 8/29〜9/7 の10日ぶん・本番のみ）。⚠️ 9/7は集計途中</span></div>
+          <div class="sub-head">数字はここで落ちています</div>
+          <div class="funnel-f" data-funnel="L01"></div>
+          <div class="sub-head" style="margin-top:18px">日ごとに払われた件数</div>
+          <div class="split">
+            <div class="split-col">
+              <div class="split-row"><span>8/29 〜 9/1</span><span>4日とも0</span><b>0件</b></div>
+              <div class="split-row"><span>9/2</span><span>初販売</span><b>1件</b></div>
+              <div class="split-row"><span>9/3</span><span></span><b>2件</b></div>
+            </div>
+            <div class="split-col">
+              <div class="split-row bad"><span>9/7（15時まで）</span><span>鍵を33回タップされて</span><b>0件</b></div>
+              <div class="split-row"><span>リリース後の通算</span><span>7件 × 250円</span><b>1,750円</b></div>
+            </div>
+          </div>
+        </div>
+        <div class="hist-recs"></div>
+      </div>
+      <p class="forecast">10日で1,990人が来て、払ったのは <strong>7件・1,750円</strong>。鍵をタップする人は増えているのに、買う人が増えていません。</p>
+    </div>
+
+    <div class="section tabbed t-bottleneck">
+      <div class="sec-tab t-bottleneck"><span class="k">BOTTLENECK</span><span class="ja">ボトルネック</span></div>
+      <div class="sec-right"><button class="cmt" data-id="L01" data-sec="ボトルネック" data-loop="有料チケットの売上を、月15,000円に">コメント</button></div>
+
+      <div class="story">
+        無料で足りてしまう → 払う理由が立っていない → 鍵は見にくるが買わない。<br>
+        ⚠️ 逆に振れる可能性もある。試させた結果、期待ほど面白くなくて離れる。
+      </div>
+
+      <div class="sub-head">施策案</div>
+      <div class="open-list"><div class="open-item"><span class="idea-pill"><span class="bulb">💡</span>施策 1</span><div>課金モーダルで、1枚で有料5本すべてが24時間遊べることを見せる（過去30日で、鍵をタップした316人のうち払ったのは7件）</div><button class="do" data-id="L01" data-loop="有料チケットの売上を、月15,000円に" data-no="1" data-text="課金モーダルで、1枚で有料5本すべてが24時間遊べることを見せる">指示する</button></div><div class="open-item"><span class="idea-pill"><span class="bulb">💡</span>施策 2</span><div>値段と期間の組み合わせを試して比べる（250円／24時間しか出していない）</div><button class="do" data-id="L01" data-loop="有料チケットの売上を、月15,000円に" data-no="2" data-text="値段と期間の組み合わせを試して比べる">指示する</button></div></div>
+    </div>
+
+    <div class="section tabbed t-trial">
+      <div class="sec-tab t-trial"><span class="k">TRIAL</span><span class="ja">トライ中の施策</span></div>
+      <div class="sec-right"><button class="cmt" data-id="L01" data-sec="トライ中の施策" data-loop="有料チケットの売上を、月15,000円に">コメント</button></div>
+      <div class="trial">
+        <div class="trial-top">
+          <div class="trial-name">ゲーム枠の上にロック解除ボタンを置く</div>
+          <div class="head-right"><button class="ins" data-id="L01" data-loop="有料チケットの売上を、月15,000円に" data-text="ゲーム枠の上にロック解除ボタンを置く">指示する</button><div class="trial-status">本番に入れた（9/2）</div></div>
+        </div>
+        <div class="todo">
+          <div class="todo-title">やったこと</div>
+          <ul><li>カードのバッジを外し、ゲーム枠の上に共通のボタンを1つ置いた</li></ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="section record-section tabbed t-record">
+      <div class="sec-tab t-record"><span class="k">RECORD</span><span class="ja">施策の評価</span></div>
+      <div class="sec-right"><button class="cmt" data-id="L01" data-sec="施策の評価" data-loop="有料チケットの売上を、月15,000円に">コメント</button></div>
+      <div class="record-set" data-records="L01">
+<article class="record-item" id="record-L01-T01"><div class="record-top"><h3>ゲーム枠の上にロック解除ボタンを置く</h3></div>
+<p class="record-meta">実施 2026-09-02 · 実施済 · 未評価（測れるだけのデータが無い）</p>
+<div class="record-verdict"><div class="rvd-score g-none"><b>-</b><i>未評価</i></div><div class="rvd-body"><span class="rvd-k">現在の評価</span><p><b>ボタン単独の効果は、まだ測れない。</b>入口を見分ける計測を入れたのは 9/7 で、まだ1日ぶんしかない。</p></div></div>
+<p class="record-forecast"><span>予想</span>2週間で 7件 → 10件<em>判定 9/16</em></p>
+<div class="record-viz"><div class="rv-title">日ごとに払われた件数<em>▼ 9/2 実施</em></div><div class="rv-bars"><div class="rv-col "><b>0</b><i style="height:0%"></i></div><div class="rv-col "><b>0</b><i style="height:0%"></i></div><div class="rv-col on"><b>1</b><i style="height:33%"></i></div><div class="rv-col "><b>2</b><i style="height:67%"></i></div><div class="rv-col "><b>0</b><i style="height:0%"></i></div><div class="rv-col alt"><b>3</b><i style="height:100%"></i></div></div><div class="rv-labels"><span class="">8/31</span><span class="">9/1</span><span class="on">9/2</span><span class="">9/3</span><span class="">9/4</span><span class="">9/6</span></div><div class="rv-foot">実施前は <b>0件</b>。実施後の6日で <b>7件・1,750円</b>。斜線の 9/6 は、別の購入入口が入った日。</div></div>
+<p class="record-warn">⚠️ いちばん売れた日は別の入口が入った日で、どちらから買われたかを分けられていない。</p>
+<button class="cmt record-comment" data-id="L01" data-sec="施策の評価「ゲーム枠の上にロック解除ボタンを置く」" data-loop="有料チケットの売上を、月15,000円に">この施策にコメント</button></article>
+<details class="record-log"><summary><span>出来事のLOG</span><a href="logs/L01.md" target="_blank" rel="noopener">別タブで開く ↗</a></summary><iframe src="logs/L01.md" loading="lazy" title="L01 の出来事のLOG"></iframe></details>
+</div></div>
+  </div>
+</section>
+
+<!-- ═════════ L02（施策がまだ無いループ）═════════ -->
+<section class="screen" id="s-L02">
+  <button class="back" data-go="s-list"><span class="arw">←</span> ループ一覧</button>
+  <div class="flow">
+    <div class="section tabbed t-goal">
+      <div class="sec-tab t-goal"><span class="k">GOAL</span><span class="ja">ゴール</span><span class="lid">· L02</span></div>
+      <div class="sec-right"><button class="upd" data-upd="L02">更新</button><button class="cmt" data-id="L02" data-sec="ゴール" data-loop="来た人が、次の日もまた来る割合を30%に">コメント</button></div>
+      <h1 class="goal-name sm">来た人が、次の日もまた来る割合を 30% に</h1>
+      <div class="goal-numbers">
+        <div class="number-block"><div class="number-label" data-goal-when="L02">いま</div><div class="number"><span data-goal-now="L02">11</span><small> %</small></div></div>
+        <div class="progress-wrap">
+          <div class="progress-track"><div class="progress-fill" data-goal-fill="L02" style="width:37%"></div></div>
+          <div class="progress-meta"><span>はじめた頃 18%</span><span data-goal-diff="L02">—</span></div>
+        </div>
+        <div class="number-block" style="text-align:right"><div class="number-label">目標</div><div class="number">30<small> %</small></div></div>
+      </div>
+      <div class="hist" data-hist="L02">
+        <div class="hist-top">
+          <span class="hist-note"></span>
+        </div>
+        <div class="hist-chart"></div>
+        <div class="hist-report">
+          <div class="hr-title">レポート <span class="hr-when">9/4〜9/6 に初めて来た638人・GA4のコホート</span></div>
+          <div class="split">
+            <div class="split-col">
+              <div class="split-title">初めて来た日ごと</div>
+              <div class="split-row"><span>9/4</span><span>185人のうち35人</span><b>19%</b></div>
+              <div class="split-row"><span>9/5</span><span>249人のうち34人</span><b>14%</b></div>
+              <div class="split-row bad"><span>9/6</span><span>翌日が今日・集計途中</span><b>1%</b></div>
+            </div>
+            <div class="split-col">
+              <div class="split-title">戻ってきた人（日ごと）</div>
+              <div class="split-row"><span>9/5</span><span>全体333人</span><b>84人</b></div>
+              <div class="split-row"><span>9/6</span><span>全体306人</span><b>100人</b></div>
+            </div>
+          </div>
+        </div>
+        <div class="hist-recs"></div>
+      </div>
+      <p class="forecast"><strong>翌日また来る割合 11%。</strong>初日ごとの振れが極端で、窓の切り方で大きく動きます。</p>
+    </div>
+
+    <div class="section tabbed t-bottleneck">
+      <div class="sec-tab t-bottleneck"><span class="k">BOTTLENECK</span><span class="ja">ボトルネック</span></div>
+      <div class="sec-right"><button class="cmt" data-id="L02" data-sec="ボトルネック" data-loop="来た人が、次の日もまた来る割合を30%に">コメント</button></div>
+      <div class="story">人が集まらないと遊べないので、戻ってきたときに遊べる状態があるかが効いていると見ている。</div>
+      <div class="sub-head">施策案</div>
+      <div class="open-list"><div class="open-item"><span class="idea-pill"><span class="bulb">💡</span>施策 1</span><div>翌日また来た人が、初日に何をしていたかを調べる</div><button class="do" data-id="L02" data-loop="来た人が、次の日もまた来る割合を30%に" data-no="1" data-text="翌日また来た人が、初日に何をしていたかを調べる">指示する</button></div></div>
+    </div>
+
+    <div class="section tabbed t-trial">
+      <div class="sec-tab t-trial"><span class="k">TRIAL</span><span class="ja">トライ中の施策</span></div>
+      <div class="sec-right"><button class="cmt" data-id="L02" data-sec="トライ中の施策" data-loop="来た人が、次の日もまた来る割合を30%に">コメント</button></div>
+      <div class="trial empty">
+        <div class="trial-top"><div class="trial-name">施策待ちです</div></div>
+        <div class="todo"><ul><li>ボトルネックの中から1つ選ぶと、ここに入ります</li></ul></div>
+      </div>
+    </div>
+
+    <div class="section record-section tabbed t-record">
+      <div class="sec-tab t-record"><span class="k">RECORD</span><span class="ja">施策の評価</span></div>
+      <div class="sec-right"><button class="cmt" data-id="L02" data-sec="施策の評価" data-loop="来た人が、次の日もまた来る割合を30%に">コメント</button></div>
+      <div class="record-set" data-records="L02">
+<p class="empty-copy">まだ実施済みの施策はありません。</p>
+<details class="record-log"><summary><span>出来事のLOG</span><a href="logs/L02.md" target="_blank" rel="noopener">別タブで開く ↗</a></summary><iframe src="logs/L02.md" loading="lazy" title="L02 の出来事のLOG"></iframe></details>
+</div></div>
+  </div>
+</section>
+
+
+</div>
+
+
+<div id="modal" role="dialog" aria-modal="true">
+  <div class="m-panel">
+    <div class="m-kick">COMMENT</div>
+    <h3 class="m-title" id="m-title">ボトルネックについて</h3>
+    <div class="m-sub" id="m-sub"></div>
+    <textarea class="m-input" id="m-input"></textarea>
+    <div class="m-actions">
+      <button class="button button-secondary" id="m-cancel">キャンセル</button>
+      <button class="button button-primary" id="m-ok">コピーする</button>
+    </div>
+    <div class="m-hint">⌘/Ctrl + Enter でも確定します</div>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite">
+  <div class="t-head">COPIED</div>
+  <div class="t-body" id="toast-body"></div>
+  <div class="t-foot">AIに貼って伝えてください。</div>
+</div>
+
+<script>
+  var toast=document.getElementById('toast'), toastBody=document.getElementById('toast-body'), toastT;
+  function showToast(text, ok, foot){
+    toast.classList.toggle('err', !ok);
+    toast.querySelector('.t-head').textContent = ok ? 'COPIED' : 'コピーできませんでした';
+    //=== foot は貼り先の案内。既定はチャット、右ペインの起動コマンドだけターミナル
+    toast.querySelector('.t-foot').textContent = ok ? (foot || 'AIに貼って伝えてください。') : '下の文をコピーして、AIに伝えてください。';
+    toastBody.textContent = text;
+    toast.classList.add('on');
+    clearTimeout(toastT);
+    toastT = setTimeout(function(){ toast.classList.remove('on'); }, ok ? 4200 : 9000);
+  }
+  function copyText(text, foot){
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){ showToast(text,true,foot); },
+                                              function(){ legacyCopy(text,foot); });
+    } else { legacyCopy(text,foot); }
+  }
+  function legacyCopy(text, foot){
+    try{
+      var ta=document.createElement('textarea');
+      ta.value=text; ta.setAttribute('readonly','');
+      ta.style.cssText='position:fixed;top:0;left:0;opacity:0';
+      document.body.appendChild(ta); ta.select();
+      var ok=document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast(text, ok, foot);
+    }catch(e){ showToast(text,false,foot); }
+  }
+
+  var screens = Array.prototype.slice.call(document.querySelectorAll('.screen'));
+  function show(id, push){
+    if(!document.getElementById(id)) id = 's-list';
+    screens.forEach(function(s){ s.classList.toggle('active', s.id === id); });
+    if(push !== false && location.hash !== '#' + id){ location.hash = id; }
+    window.scrollTo(0, 0);
+    //=== ★隠れている画面は幅が0なので図が描けない。表に出た時点で描き直す
+    (window.LOOP_REDRAWS || []).forEach(function(f){ f(); });
+  }
+  var modal=document.getElementById('modal'), mInput=document.getElementById('m-input');
+  var mTitle=document.getElementById('m-title'), mSub=document.getElementById('m-sub');
+  var PH_CMT='このセクションへのフィードバックをどうぞ。';
+  var PH_DO='これをやって／これは消して／この認識は違う、など。そのままどうぞ。';
+  var cur=null;
+  function openModal(cfg){
+    cur=cfg;
+    modal.querySelector('.m-kick').textContent = cfg.kick;
+    mTitle.textContent = cfg.title;
+    mSub.textContent = cfg.sub || '';
+    mInput.placeholder = cfg.ph;
+    mInput.value=''; modal.classList.add('on');
+    setTimeout(function(){ mInput.focus(); }, 30);
+  }
+  function closeModal(){ modal.classList.remove('on'); }
+  function submitModal(){
+    var v=mInput.value.trim();
+    if(!v){ mInput.focus(); return; }
+    var text = cur.compose(v);
+    closeModal();
+    copyText(text);
+  }
+  document.getElementById('m-ok').addEventListener('click', submitModal);
+  document.getElementById('m-cancel').addEventListener('click', closeModal);
+  // ★ドラッグで閉じないようにする。click は mousedown と mouseup の共通祖先で発火するため、
+  //   テキストエリアで押して背景で離すと e.target が背景になり、誤って閉じてしまう。
+  //   押した場所も背景だったときだけ閉じる。
+  var downTarget = null;
+  modal.addEventListener('pointerdown', function(e){ downTarget = e.target; });
+  modal.addEventListener('click', function(e){
+    if(e.target === modal && downTarget === modal) closeModal();
+    downTarget = null;
+  });
+  mInput.addEventListener('keydown', function(e){
+    if((e.metaKey||e.ctrlKey) && e.key==='Enter') submitModal();
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key==='Escape' && modal.classList.contains('on')) closeModal();
+  });
+
+  document.addEventListener('click', function(e){
+    //=== コピーする文言は、貼った先で読める形に固定する。
+    //===   ★ target は「その項目についての指示」のときだけ出す。セクションへのコメントには出さない
+    //===     （画面ぜんたいを見て言っているのに、勝手に対象を狭めないため）
+    var SEC = { 'ゴール':'GOAL', 'ボトルネック':'BOTTLENECK', 'トライ中の施策':'TRIAL',
+                '施策の評価':'RECORD', 'ループ一覧':'LOOPS' };
+    function kickOf(sec){
+      for (var k in SEC) if (sec && sec.indexOf(k) === 0) return SEC[k];
+      return sec || '';
+    }
+    function block(loop, sec, target, v, key){
+      var s = '---\nloop: ' + (loop || '') + '\nsection: ' + sec + '\n';
+      if (target) s += 'target: ' + target + '\n';
+      s += 'rule: 必ずスキル rising-loop の手順で直すこと\n' + (key || 'feedback') + ': |\n';
+      s += String(v || '').split('\n').map(function(x){ return '  ' + x; }).join('\n');
+      return s + '\n---';
+    }
+    //=== 更新ボタン。人の言葉ではなく命令なので task: にする
+    //===   ★手順は書かない。rule: 行で SKILL.md の「数字を更新し、施策を再評価する」に乗る。
+    //===   ここに写すと二重持ちになり、スキルを直したときにこちらが古いまま残る
+    var TASK = {
+      all: 'loops/ の全ループを更新して',
+      one: 'このループを更新して'
+    };
+    var up = e.target.closest('[data-upd]');
+    if(up){ e.preventDefault(); e.stopPropagation();
+      var ul = up.getAttribute('data-upd');
+      copyText(block(ul, ul === 'all' ? 'ALL' : 'GOAL', '', ul === 'all' ? TASK.all : TASK.one, 'task'));
+      return; }
+
+    var ins = e.target.closest('.ins');
+    if(ins){ e.preventDefault(); e.stopPropagation();
+      var iid=ins.getAttribute('data-id'), itx=ins.getAttribute('data-text');
+      openModal({ kick:'INSTRUCTION', title:'施策について', sub:itx, ph:PH_DO,
+        compose:function(v){ return block(iid, 'TRIAL', itx, v); } });
+      return; }
+    var d = e.target.closest('.do');
+    if(d){ e.preventDefault(); e.stopPropagation();
+      var did=d.getAttribute('data-id'), dno=d.getAttribute('data-no'), dtx=d.getAttribute('data-text');
+      openModal({ kick:'INSTRUCTION', title:'施策案 '+dno+'について', sub:dtx, ph:PH_DO,
+        compose:function(v){ return block(did, 'BOTTLENECK', dtx, v); } });
+      return; }
+    var cm = e.target.closest('.cmt');
+    if(cm){ e.preventDefault(); e.stopPropagation();
+      var cid=cm.getAttribute('data-id'), clp=cm.getAttribute('data-loop'), csec=cm.getAttribute('data-sec');
+      //=== 施策の評価「◯◯」のときだけ、◯◯ を target にする
+      var mt = csec && csec.match(/「(.+)」$/);
+      openModal({ kick:'COMMENT', title:csec+'について', sub:(clp===csec?'':clp), ph:PH_CMT,
+        compose:function(v){ return block(cid, kickOf(csec), mt ? mt[1] : '', v); } });
+      return; }
+    var c = e.target.closest('[data-copy]');
+    if(c){ e.preventDefault(); e.stopPropagation(); copyText(c.getAttribute('data-copy'), c.getAttribute('data-foot')); return; }
+    var t = e.target.closest('[data-go]');
+    if(!t) return;
+    show(t.getAttribute('data-go'));
+  });
+  window.addEventListener('hashchange', function(){
+    show(location.hash.replace('#','') || 's-list', false);
+  });
+  show(location.hash.replace('#','') || 's-list', false);
+</script>
+
+<script>
+//=== GOAL の履歴。loops/*.md の history: と loops/logs/*.md の出来事 から生成している。直接編集しない。
+var LOOP_HIST = {
+  L01: {
+    unit: "円", target: 15000,
+    //=== 単価。金額の下に枚数を出すのに使う
+    price: 250,
+    //=== 棒＝その日の値、線＝計測点（その窓の値）。単位はそろえる。
+    //===   ⚠️ 途中の日（今日）も入れる。partial:true を立てると薄い色になる。
+    dayUnit: "円",
+    days: [
+      { d:"8/29", v:0 }, { d:"8/30", v:0 }, { d:"8/31", v:0 },
+      { d:"9/1",  v:0 }, { d:"9/2",  v:250 }, { d:"9/3", v:500 },
+      { d:"9/4",  v:0 }, { d:"9/5",  v:250 }, { d:"9/6", v:750 }, { d:"9/7", v:0, partial:true }
+    ],
+    //=== 折れ線。その日に計測していたらいくつだったか（窓の規則をその日に当てた値）
+    line: [
+      { d:"8/29", v:0 }, { d:"8/30", v:0 }, { d:"8/31", v:0 }, { d:"9/1", v:0 }, { d:"9/2", v:250 },
+      { d:"9/3", v:750 }, { d:"9/4", v:750 }, { d:"9/5", v:1000 }, { d:"9/6", v:1750 }, { d:"9/7", v:2000 }
+    ],
+    points: [
+      { at: "2026-09-03", label: "9月3日", value: 750, end: "9/3",
+        note: "8/29〜9/3 の6日で3件",
+        recs: [
+          ["9/2", "🎉 初販売。ロック解除ボタンを本番へ入れた日の夜に1件"],
+          ["8/30", "診断した日。2日で0件"]
+        ] },
+      { at: "2026-09-07", label: "9月7日", value: 1750, end: "9/7",
+        note: "8/29〜9/7 の10日で7件。9/7 は15時まで0件",
+        recs: [
+          ["9/7", "鍵をタップする人は増えているのに買う人が増えていない"],
+          ["9/6", "9/6 に3件売れた。1日あたりの最多"]
+        ] }
+    ],
+    //=== 最新の点のときだけ「この計測のあとに入ったこと」として出る
+    after: []
+  },
+  L02: {
+    unit: "%", target: 30,
+    dayUnit: "%",
+    days: [
+      { d:"9/1", v:18 }, { d:"9/2", v:4 }, { d:"9/3", v:7 }, { d:"9/4", v:19 }, { d:"9/5", v:14 }
+    ],
+    //=== 折れ線。その日に計測していたらいくつだったか（窓の規則をその日に当てた値）
+    line: [
+      { d:"9/1", v:18 }, { d:"9/2", v:16 }, { d:"9/3", v:13 }, { d:"9/4", v:11 }, { d:"9/5", v:14 }
+    ],
+    points: [
+      { at: "2026-09-04", label: "9月4日", value: 18, end: "9/1",
+        note: "診断した日。窓 8/29〜9/1 に初めて来た873人のうち157人が翌日も来た",
+        recs: [ ["9/4", "このループを作った"] ] },
+      { at: "2026-09-07", label: "9月7日", value: 11, end: "9/6",
+        note: "窓 9/4〜9/6 に初めて来た638人のうち72人が翌日も来た。9/6初日ぶんは集計途中",
+        recs: [ ["9/7", "初日ごとの振れが極端。窓の切り方で大きく動く"] ] }
+    ],
+    after: []
+  }
+};
+
+
+(function(){
+  //=== 折れ線。ファネルと同じく D3 で描く（描画の仕方をこのファイルで1通りに揃えている）。
+  //===   ★実寸で描くので viewBox の引き伸ばしをしない。丸が楕円に歪まず、目標ラベルも SVG に置ける。
+  //===   D3 が読めなかったときは何も描かない（数字は上のゲージと記録に出ている）。
+  function drawChart(el, pts, target, unit, cur, days, dayUnit, dayTarget, dayTargetUnit, dual, line, tlabel){
+    el.innerHTML = '';
+    if (!window.d3) return;
+    var W = el.clientWidth, H = 96, PAD = 10, PAD_R = 78;   //=== 右は「目標」ラベルのぶん空ける
+    if (!W) return;
+    //=== 日ごとの数字を持っているループは、棒＋折れ線で描く（下の drawBars）。
+    //===   持っていないループはこれまでどおり折れ線だけ。
+    if (days && days.length) return drawBars(el, pts, target, unit, cur, days, W, dayUnit, dayTarget, dayTargetUnit, dual, line, tlabel);
+    var vals = pts.map(function(p){ return p.value; }).concat([target, 0]);
+    var y = d3.scaleLinear()
+      .domain([d3.min(vals), d3.max(vals)])
+      .range([H - PAD, PAD]);
+    var x = d3.scaleLinear()
+      .domain([0, Math.max(1, pts.length - 1)])
+      .range([PAD, pts.length < 2 ? W / 2 : W - PAD_R]);
+
+    var svg = d3.select(el).append('svg').attr('width', W).attr('height', H);
+    drawTarget(svg, W, PAD_R, y(target), target, unit, tlabel);
+
+    if (pts.length > 1) {
+      svg.append('path')
+        .attr('fill', 'none').attr('stroke', '#52751f').attr('stroke-width', 2)
+        .attr('d', d3.line().x(function(p, i){ return x(i); }).y(function(p){ return y(p.value); })(pts));
+    }
+    svg.selectAll('circle').data(pts).enter().append('circle')
+      .attr('cx', function(p, i){ return x(i); })
+      .attr('cy', function(p){ return y(p.value); })
+      .attr('r', function(p, i){ return i === cur ? 5 : 3.5; })
+      .attr('fill', function(p, i){ return i === cur ? '#52751f' : '#a8b3a4'; });
+  }
+
+  //=== 目標の破線と、その正体を書くラベル（折れ線でも棒でも同じ見た目にする）
+  //===   ★下げたいループ（コストなど）は LOOP_HIST に targetLabel: '上限' を置く。既定は「目標」
+  //=== 目標がグラフの外にあるとき。★線は引かない。
+  //===   上端に破線を引くと「上端＝目標」に見えて、距離を読みちがえる。
+  //===   どれだけ離れているかはゲージ（value / target）が持っているので、ここは在りかだけ示す。
+  function drawTargetOff(svg, W, PAD_T, target, unit, tlabel){
+    svg.append('text').attr('x', W).attr('y', PAD_T - 5).attr('text-anchor', 'end')
+      .attr('font-family', 'ui-monospace,SFMono-Regular,Menlo,monospace')
+      .attr('font-size', 12).attr('fill', '#87918b')
+      .text('↑ ' + (tlabel || '目標') + ' ' + fmt(target) + unit + '（グラフの外）');
+  }
+
+  function drawTarget(svg, W, PAD_R, ty, target, unit, tlabel){
+    svg.append('line').attr('x1', 0).attr('x2', W - PAD_R + 6)
+      .attr('y1', ty).attr('y2', ty)
+      .attr('stroke', '#cbd2cb').attr('stroke-dasharray', '4 4').attr('stroke-width', 1);
+    svg.append('text').attr('x', W).attr('y', ty + 4).attr('text-anchor', 'end')
+      .attr('font-family', 'ui-monospace,SFMono-Regular,Menlo,monospace')
+      .attr('font-size', 12).attr('fill', '#87918b')
+      .text((tlabel || '目標') + ' ' + fmt(target) + unit);
+  }
+
+  //=== 棒＝その日の数字 ／ 折れ線＝計測点（その窓の最終日の位置に置く）。
+  //===   ★折れ線だけだと 44→37→37→39 が 0〜60 の縦軸の中で潰れて水平線に見える。
+  //===     棒を下敷きにすると 0 からの高さが出て、日ごとの動きも同じ絵で読める。
+  //===   ★3案を並べて比べたモックは docs/260904_UIモック-計測グラフ案.html（A案を採用）
+  //=== ★棒が「1日ぶんの実額」で、ゴールが月額のときは、目標線と折れ線も1日ぶんに直す
+  //===   （dayTarget と各点の dayValue）。棒だけ月換算にすると「6470円」のような
+  //===   実在しない額が並んで読めなくなる（2026-09-05 のフィードバック）。
+  function drawBars(el, pts, target, unit, cur, days, W, dayUnit, dayTarget, dayTargetUnit, dual, line, tlabel){
+    if (dayTarget != null) { target = dayTarget; unit = dayTargetUnit || unit; }
+    var H = 150, PAD_T = 18, PAD_B = 22, PAD_L = 4, PAD_R = 78;
+    var svg = d3.select(el).append('svg').attr('width', W).attr('height', H);
+    //=== ★縦軸の上端は max(目標, 実測)。目標で切ると、目標を超えた日が
+    //===   グラフの外に出て見えなくなる。
+    //=== ★ただし目標が実測の5倍を超えるときは、この規則が逆に働く。
+    //===   棒が高さ12%まで潰れて、日ごとの動きが読めなくなる（2026-09-10 に実際に起きた）。
+    //===   そのときは縦軸をデータに合わせ、目標は「グラフの外」と文字で出す（線は引かない）。
+    var dataMax = d3.max(
+      days.map(function(d){ return d.v; }).concat(
+      (line && line.length) ? line.map(function(q){ return q.v; })
+                            : pts.map(function(p){ return p.dayValue != null ? p.dayValue : p.value; })));
+    var farTarget = target > dataMax * 5;
+    var top = farTarget ? dataMax * 1.15 : d3.max([target, dataMax]);
+    var y = d3.scaleLinear().domain([0, top]).range([H - PAD_B, PAD_T]);
+    //=== ★dual: 棒（その日の実額）と折れ線（ゴールの数字＝過去30日の合計）で桁が違うとき、
+    //===   縦軸を分ける。1本にすると、目標がはるか上にあるぶん**棒も線もぺたんこ**になって
+    //===   何も読めない（2026-09-05 に実際にそうなった）。
+    var yBar = y, yLine = y, lo = 0, hi = 0;
+    if (dual) {
+      yBar = d3.scaleLinear()
+        .domain([0, d3.max(days.map(function(d){ return d.v; }))])
+        .range([H - PAD_B, PAD_T + 26]);
+      //=== ★線の縦軸は「実際に描く系列」から取る。line を持つループで pts から取ると、
+      //===   計測点が1つしか無いとき domain が潰れて、線がグラフの外へ飛ぶ（2026-09-14）
+      var inWin = {}; days.forEach(function(q){ inWin[q.d] = 1; });
+      var lvals = (line && line.length)
+        ? line.filter(function(q){ return inWin[q.d]; }).map(function(q){ return q.v; })
+        : pts.map(function(p){ return p.value; });
+      lo = d3.min(lvals);
+      hi = d3.max(lvals);
+      yLine = d3.scaleLinear()
+        .domain([lo - (hi - lo || 1) * 0.8, hi + (hi - lo || 1) * 0.3])
+        .range([H - PAD_B, PAD_T]);
+    }
+    var x = d3.scaleBand().domain(days.map(function(d){ return d.d; }))
+      .range([PAD_L, W - PAD_R]).padding(0.34);
+
+    //=== 小数の混ざる系列（0.10円）は桁を揃える。fmt だと 0.10 が "0.1" になって並びが乱れる
+    var frac = days.some(function(d){ return d.v % 1 !== 0; });
+    var dfmt = function(v){ return frac ? v.toFixed(2) : String(v); };
+
+    if (!dual) {
+      if (farTarget) drawTargetOff(svg, W, PAD_T, target, unit, tlabel);
+      else drawTarget(svg, W, PAD_R, y(target), target, unit, tlabel);
+    }
+
+    svg.selectAll('rect').data(days).enter().append('rect')
+      .attr('x', function(d){ return x(d.d); }).attr('width', x.bandwidth())
+      .attr('y', function(d){ return yBar(d.v); })
+      .attr('height', function(d){ return Math.max(0, yBar(0) - yBar(d.v)); })
+      //=== 途中の日（partial）は薄くするだけ。印や注記は付けない（毎日見る人には分かる）
+      .attr('fill', function(d){ return d.partial ? '#e1e9cf' : '#c3d29b'; });
+    //=== 数字は棒の内側に深めに置く。棒のすぐ上や浅い位置だと折れ線とぶつかる
+    //===   （棒と線は近い値なので必ず近くを通る）。低い棒のときだけ棒の上に出す。
+    var tall = function(d){ return yBar(0) - yBar(d.v) >= 34; };
+    svg.selectAll('text.bv').data(days).enter().append('text').attr('class', 'bv')
+      .attr('x', function(d){ return x(d.d) + x.bandwidth() / 2; })
+      .attr('y', function(d){ return tall(d) ? yBar(d.v) + 26 : yBar(d.v) - 6; })
+      .attr('text-anchor', 'middle').attr('font-size', 11)
+      .attr('fill', function(d){ return tall(d) ? '#4c5b3c' : '#87918b'; })
+      .attr('font-family', 'ui-monospace,SFMono-Regular,Menlo,monospace')
+      .text(function(d){ return dfmt(d.v) + (dayUnit || ''); });
+
+    //=== 計測点。棒に無い日（＝この窓より後の計測）は描かない
+    //=== 同じ窓を取り直した点は同じ日に重なり、線が縦になる。選んでいる点を優先し、
+    //===   それ以外は新しいほうだけを描く（2026-09-08 のフィードバック）。
+    //=== 折れ線は「その日に計測していたらいくつだったか」を日ごとに描く（LOOP_HIST の line）。
+    //===   ★単位はゴールの単位のまま。line を持たないループは計測点をつなぐ。
+    var seen = [];
+    if (line && line.length) {
+      line.forEach(function(q){
+        var b = x(q.d);
+        if (b === undefined) return;
+        seen.push({ v: q.v, cur: false, cx: b + x.bandwidth() / 2 });
+      });
+      if (seen.length) seen[seen.length - 1].cur = true;
+    } else {
+      var byEnd = {};
+      pts.forEach(function(p, i){
+        var b = x(p.end);
+        if (b === undefined) return;
+        var s = { v: p.dayValue != null ? p.dayValue : p.value, cur: i === cur, cx: b + x.bandwidth() / 2 };
+        if (byEnd[p.end] != null) {
+          if (seen[byEnd[p.end]].cur) return;
+          seen[byEnd[p.end]] = s;
+        } else { byEnd[p.end] = seen.length; seen.push(s); }
+      });
+    }
+    if (seen.length > 1) {
+      svg.append('path').attr('fill', 'none').attr('stroke', '#52751f').attr('stroke-width', 2)
+        .attr('d', d3.line().x(function(s){ return s.cx; }).y(function(s){ return yLine(s.v); })(seen));
+    }
+    svg.selectAll('circle').data(seen).enter().append('circle')
+      .attr('cx', function(s){ return s.cx; }).attr('cy', function(s){ return yLine(s.v); })
+      .attr('r', function(s){ return s.cur ? 5 : 3.5; })
+      .attr('fill', function(s){ return s.cur ? '#52751f' : '#a8b3a4'; });
+
+    //=== dual のときは軸が2本あるので、線の高さは目盛りでは読めない。最新の点に数字を添える。
+    if (dual && seen.length) {
+      var last = seen[seen.length - 1];
+      svg.append('text').attr('x', last.cx - 8).attr('y', yLine(last.v) - 9)
+        .attr('text-anchor', 'end').attr('font-size', 11).attr('fill', '#4c5b3c')
+        .attr('font-family', 'ui-monospace,SFMono-Regular,Menlo,monospace')
+        .text('合計 ' + fmt(last.v) + (unit || ''));
+    }
+    svg.selectAll('text.xl').data(days).enter().append('text').attr('class', 'xl')
+      .attr('x', function(d){ return x(d.d) + x.bandwidth() / 2; }).attr('y', H - 6)
+      .attr('text-anchor', 'middle').attr('font-size', 11).attr('fill', '#87918b')
+      .attr('font-family', 'ui-monospace,SFMono-Regular,Menlo,monospace')
+      .text(function(d){ return d.d; });
+  }
+
+  //=== 選んだ計測点の窓の最終日までで棒を切る（レポートを畳むのと同じ理屈で、
+  //===   過去の点に戻したときにグラフだけ最新のままにしない）。並べるのは直近10本まで。
+  function daysFor(d, p){
+    if (!d.days || !d.days.length) return null;
+    var k = -1;
+    d.days.forEach(function(x, i){ if (x.d === p.end) k = i; });
+    var ls = k < 0 ? d.days : d.days.slice(0, k + 1);
+    //=== 窓の後ろにある途中の日（partial）も並べる
+    if (k >= 0) ls = ls.concat(d.days.slice(k + 1).filter(function(x){ return x.partial; }));
+    return ls.slice(-10);
+  }
+
+  //=== 小数の目標（0.45円/人日 など）だと 0.26-0.28 が -0.020000000000000018 になる。
+  //=== 表示はここを通す。整数はそのまま（7 → "7"）、小数は2桁で丸める（0.02 → "0.02"）。
+  //=== 4桁以上は桁区切りを入れる（1000 → 1,000）。小数は2桁まで
+  function fmt(n){ return Number(+Number(n).toFixed(2)).toLocaleString('ja-JP', { maximumFractionDigits: 2 }); }
+  function recList(head, rows){
+    if (!rows || !rows.length) return "";
+    return '<div class="hr-head">'+head+'</div><ul>' +
+      rows.map(function(r){ return '<li><b>'+r[0]+'</b><span>'+r[1]+'</span></li>'; }).join("") + '</ul>';
+  }
+  Object.keys(LOOP_HIST).forEach(function(id){
+    var box = document.querySelector('[data-hist="'+id+'"]');
+    if (!box) return;
+    var d = LOOP_HIST[id], cur = d.points.length - 1;
+    var elNote = box.querySelector(".hist-note"), elChart = box.querySelector(".hist-chart"),
+        elRecs = box.querySelector(".hist-recs"),
+        elReport = box.querySelector(".hist-report"),
+        elWhen = document.querySelector('[data-goal-when="'+id+'"]'),
+        elNow = document.querySelector('[data-goal-now="'+id+'"]'),
+        elFill = document.querySelector('[data-goal-fill="'+id+'"]'),
+        elDiff = document.querySelector('[data-goal-diff="'+id+'"]'),
+        elMoney = document.querySelector('[data-goal-money="'+id+'"]');
+    function render(){
+      var p = d.points[cur];
+      //=== 日付と値は上のゲージが持っている。ここに出すと同じことを2回言うことになる
+      elNote.textContent = p.note || "";
+      //=== ⚠️ 注意書きは innerHTML の中に入れる。afterend で足すと render のたびに増える
+      drawChart(elChart, d.points, d.target, d.unit, cur, daysFor(d, p), d.dayUnit, d.dayTarget, d.dayTargetUnit, d.dualAxis, d.line, d.targetLabel);
+      var head = cur === 0 ? "この計測までに入ったこと" : "前の計測から、この計測までに入ったこと";
+      elRecs.innerHTML = recList(head, p.recs) +
+        recList("この計測のあとに入ったこと（次の計測で判定に使う）", d.after);
+      //=== ★上のゲージも選んだ時点に合わせる。ここが動かないと「遡れた」ことにならない。
+      if (elNow) elNow.textContent = fmt(p.value);
+      //=== 単価を持つループは、金額の下に枚数を添える（1枚250円）
+      if (elMoney && d.price) elMoney.textContent = Math.round(p.value / d.price) + '件';
+      if (elFill) elFill.style.width = Math.max(0, Math.min(100, p.value / d.target * 100)) + "%";
+      if (elDiff) {
+        if (cur === 0) { elDiff.textContent = "はじめて取った日"; }
+        else {
+          var prev = d.points[cur-1], diff = p.value - prev.value;
+          elDiff.textContent = prev.label.replace("月","/").replace("日","") + " → " +
+            p.label.replace("月","/").replace("日","") + " で " + (diff > 0 ? "＋" : diff < 0 ? "−" : "±") + fmt(Math.abs(diff));
+        }
+      }
+      //=== レポートは「いまの数字の内訳」。常に最新の1窓ぶんだけを出す
+      if (elReport) elReport.hidden = false;
+      //=== 大きい数字の上は「いま」ではなく、その計測日にする
+      if (elWhen) elWhen.textContent = p.label;
+    }
+    render();
+    //=== 画面の切り替え・幅の変化で描き直す（実寸で描いているので必要）
+    (window.LOOP_REDRAWS = window.LOOP_REDRAWS || []).push(render);
+  });
+})();
+</script>
+<script>
+//=== 横向きファネル。loops/*.md の「数字はここで落ちています」から生成している。直接編集しない。
+//===   高さは値の**対数**。実数だと先頭と末尾で桁が違い、末尾が線になって消えるため。
+var LOOP_FUNNEL = {
+  L01: {
+    note: "帯の中の % は、前の段から通った割合。上下の余白が、ここまでに失った人",
+    stages: [
+      { name: "起動",             value: 1990, unit: "人" },
+      { name: "ホームを見た",     value: 1026, unit: "人" },
+      { name: "鍵をタップ",       value:  316, unit: "人" },
+      { name: "決済シートが出た", value:   35, unit: "件" },
+      { name: "払った",           value:    7, unit: "件" }
+    ]
+  }
+};
+
+(function(){
+  var SEQ = ['#7d9a4e', '#a0a84a', '#c08a2e', '#b06b25', '#8f4a3a'];
+  var CSSV = getComputedStyle(document.documentElement);
+  var V = function(n){ return CSSV.getPropertyValue(n).trim(); };
+  var FONT = getComputedStyle(document.body).fontFamily;
+
+  function drawFunnel(box, d){
+    var st = d.stages, n = st.length;
+    var rate = st.map(function(s,i){ return i === 0 ? null : Math.round(s.value / st[i-1].value * 100); });
+    var label = function(i){ return st[i].value + st[i].unit; };
+
+    //=== D3 が読めなかったとき（オフライン等）。数字だけは必ず出す
+    if (!window.d3) {
+      box.innerHTML = '<div class="fallback">' + st.map(function(s,i){
+        return '<span>' + s.name + '<b>' + label(i) + '</b>' +
+               (rate[i] === null ? '' : ' <span style="font-size:12px">(' + rate[i] + '%)</span>') + '</span>';
+      }).join('') + '</div>';
+      return;
+    }
+
+    var W = box.clientWidth;
+    if (!W) return;
+    var narrow = W < 560;
+    var H = narrow ? 210 : 250, mL = 34, mR = 34, mT = 46, mB = 44;
+    var iw = W - mL - mR, ih = H - mT - mB, cy = mT + ih / 2;
+    box.innerHTML = '';
+    var svg = d3.select(box).append('svg').attr('width', W).attr('height', H);
+
+    var lg = function(v){ return Math.log10(v + 1); };
+    var hMax = lg(st[0].value);
+    var h = st.map(function(s){ return Math.max(6, ih * lg(s.value) / hMax); });
+    var X = st.map(function(_, i){ return mL + iw * i / (n - 1); });
+
+    //=== 段のあいだを台形でつなぐ。中央に通過率
+    for (var i = 0; i < n - 1; i++) {
+      svg.append('polygon')
+        .attr('points', [
+          [X[i], cy - h[i]/2], [X[i+1], cy - h[i+1]/2],
+          [X[i+1], cy + h[i+1]/2], [X[i], cy + h[i]/2]
+        ].join(' '))
+        .attr('fill', SEQ[i % SEQ.length]);
+      svg.append('text')
+        .attr('x', (X[i] + X[i+1]) / 2).attr('y', cy + 4).attr('text-anchor', 'middle')
+        .attr('font-size', narrow ? 11 : 13).attr('font-weight', 600)
+        .attr('fill', '#fff').attr('font-family', FONT)
+        .text(rate[i+1] + '%');
+    }
+    //=== 境目の縦線と、上に段名・下に値
+    st.forEach(function(s, i){
+      var anc = i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle';
+      svg.append('line').attr('x1', X[i]).attr('x2', X[i])
+        .attr('y1', cy - h[i]/2 - 8).attr('y2', cy + h[i]/2 + 8)
+        .attr('stroke', V('--line-soft')).attr('stroke-width', 1);
+      svg.append('text').attr('x', X[i]).attr('y', mT - 24).attr('text-anchor', anc)
+        .attr('font-size', narrow ? 10.5 : 12).attr('fill', V('--sub')).attr('font-family', FONT)
+        .text(s.name);
+      svg.append('text').attr('x', X[i]).attr('y', mT - 6).attr('text-anchor', anc)
+        .attr('font-size', narrow ? 14 : 16).attr('font-weight', 600)
+        .attr('fill', V('--ink')).attr('font-family', FONT)
+        .text(label(i));
+    });
+    if (d.note) {
+      svg.append('text').attr('x', mL).attr('y', H - 10)
+        .attr('font-size', 11.5).attr('fill', V('--dim')).attr('font-family', FONT)
+        .text(d.note);
+    }
+  }
+
+  function drawAll(){
+    document.querySelectorAll('[data-funnel]').forEach(function(box){
+      var d = LOOP_FUNNEL[box.getAttribute('data-funnel')];
+      if (d) drawFunnel(box, d);
+    });
+  }
+  drawAll();
+  (window.LOOP_REDRAWS = window.LOOP_REDRAWS || []).push(drawAll);
+  //=== 右ペインの開閉や画面幅の変化で、登録された図をまとめて描き直す。連続で来るので間引く
+  var t;
+  addEventListener('resize', function(){
+    clearTimeout(t);
+    t = setTimeout(function(){ (window.LOOP_REDRAWS || []).forEach(function(f){ f(); }); }, 120);
+  });
+})();
+</script>
+<!-- ═════════ Claude Code / codex の右ペイン ═════════
+     起動（どちらか一方。どちらを立てるかで道具が決まる。同じ 7681 番なので両方は立てない）:
+       Claude Code: sh /絶対パス/プロジェクト/loops/chat-pane.sh claude
+       codex:       sh /絶対パス/プロジェクト/loops/chat-pane.sh codex
+           （?arg=<プロジェクトの絶対パス>&arg=<画面ID> の2つが chat-pane.sh に渡る。
+             セッションIDは画面が持たない。ランチャーが loops/.chat-sessions を見て、
+             無ければその場で作る。ttyd は全プロジェクトで1本を共有）
+     見えるだけ（file:// からは iframe の中へ送れない）。真っ黒なときの出し方は #cc-help に出す -->
+<div id="cc">
+  <div class="cc-bar">
+    <button class="cc-ask" id="cc-ask">💡 15秒たってもチャットが出ない？</button>
+  </div>
+  <div class="cc-stack"></div>
+</div>
+<button id="cc-toggle">AI ◂</button>
+
+<!-- 真っ黒なときの説明。コマンドは Claude Code と codex の2つから選ぶ（どちらも同じ 7681 番） -->
+<div id="cc-help" role="dialog" aria-modal="true" aria-labelledby="cc-help-t">
+  <div class="h-panel">
+    <h3 id="cc-help-t">15秒たってもチャットが出ない？</h3>
+    <p>右のチャットは、ターミナルで動いている Claude Code（または codex）を映しているだけです。動いていないと真っ黒になります。</p>
+    <div class="h-step">① どちらかをターミナルに貼って実行</div>
+    <button class="h-cmd" data-copy="sh /絶対パス/プロジェクト/loops/chat-pane.sh claude"
+            data-foot="ターミナルに貼って実行してください。">
+      <code>sh /絶対パス/プロジェクト/loops/chat-pane.sh claude</code><span class="h-for">Claude Code</span>
+    </button>
+    <button class="h-cmd" data-copy="sh /絶対パス/プロジェクト/loops/chat-pane.sh codex"
+            data-foot="ターミナルに貼って実行してください。">
+      <code>sh /絶対パス/プロジェクト/loops/chat-pane.sh codex</code><span class="h-for">codex</span>
+    </button>
+    <div class="h-step">② このページをリロード</div>
+    <p>出るまで15秒ほどかかることがあります。</p>
+    <div class="h-actions"><button class="button button-secondary" id="cc-help-close">閉じる</button></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  //=== このプロジェクトの絶対パス（loops/ の親）。右ペインの Claude はここを cwd にして動く
+  //=== ★雛形の値。必ず loops/ の親の絶対パスに書き換える（忘れると別プロジェクトの cwd で動く）
+  var PROJECT_DIR = '/絶対パス/プロジェクト';
+  //=== 画面IDの一覧。セッションIDはここに持たない。
+  //===   loops/chat-pane.sh が loops/.chat-sessions を見て、無ければその場で作る
+  var PANES = ['s-list','s-L01','s-L02'];
+  var pane = document.getElementById('cc'), btn = document.getElementById('cc-toggle'),
+      stack = pane.querySelector('.cc-stack'),
+      //=== ★encodeURIComponent は必須。`+` はクエリ文字列で空白に化けるので %2B にして渡す
+      BASE = 'http://localhost:7681/?arg=' + encodeURIComponent(PROJECT_DIR) + '&arg=';
+  var frames = {};                            //=== 画面ID -> iframe。一度作ったら捨てない
+  function sync(){
+    if(!document.body.classList.contains('pane-on')) return;
+    var id = (location.hash || '#s-list').replace('#','');
+    if(PANES.indexOf(id) < 0) id = 's-list';
+    if(!frames[id]){                          //=== 初めて開く画面だけ繋ぐ（ここが10秒）
+      var f = document.createElement('iframe');
+      f.title = 'Claude Code'; f.setAttribute('allow', 'fullscreen');
+      //=== 渡すのは2つだけ: プロジェクトのパス / 画面ID。
+      //===   どの AI を出すかは、ターミナルで chat-pane.sh に渡した引数で決まる
+      f.src = BASE + id;
+      stack.appendChild(f);
+      frames[id] = f;
+    }
+    //=== ★src は二度と触らない。触ると接続が切れて最初からやり直しになる
+    for(var k in frames) frames[k].classList.toggle('on', k === id);
+  }
+  function set(on){
+    document.body.classList.toggle('pane-on', on);
+    btn.textContent = on ? 'AI ▸' : 'AI ◂';
+    if(on) sync();                            //=== 開くまで繋ぎに行かない
+    //=== ★ペインの開閉は padding-right が変わるだけで resize が飛ばない。
+    //===   実寸で描いている図が古い幅のまま残るので、ここで描き直す
+    (window.LOOP_REDRAWS || []).forEach(function(f){ f(); });
+    try{ localStorage.setItem('cc-pane', on ? '1' : '0'); }catch(e){}
+  }
+  var saved = null; try{ saved = localStorage.getItem('cc-pane'); }catch(e){}
+  set(saved !== '0');                         //=== 既定は開く
+  btn.addEventListener('click', function(){ set(!document.body.classList.contains('pane-on')); });
+  window.addEventListener('hashchange', sync);
+
+  //=== 「15秒たってもチャットが出ない？」の説明。コピー自体は [data-copy] の共通処理に任せる。
+  //===   ★トースト(z-index 96)はこのダイアログ(97)より下なので、押したら先に閉じる
+  var help = document.getElementById('cc-help');
+  function helpOn(on){ help.classList.toggle('on', on); }
+  document.getElementById('cc-ask').addEventListener('click', function(){ helpOn(true); });
+  document.getElementById('cc-help-close').addEventListener('click', function(){ helpOn(false); });
+  help.addEventListener('click', function(e){
+    if(e.target === help || e.target.closest('.h-cmd')) helpOn(false);
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && help.classList.contains('on')) helpOn(false);
+  });
+})();
+</script>
+
+</body>
