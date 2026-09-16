@@ -21,7 +21,7 @@
     <rect x="70" y="206" width="150" height="60" rx="10" fill="#f4f6f0" stroke="#c9d3bd"/>
     <text x="78" y="218" font-size="8" font-weight="700" fill="#8fa86a" letter-spacing=".12em" font-family="ui-monospace,monospace">TRIAL</text>
     <text x="145" y="234" text-anchor="middle" font-size="15" font-weight="700" fill="#1c2821">施策の実行</text>
-    <text x="145" y="252" text-anchor="middle" font-size="11.5" fill="#5a6a5f">1つだけ打つ</text>
+    <text x="145" y="252" text-anchor="middle" font-size="11.5" fill="#5a6a5f">打ち手を実行</text>
     <path d="M145 268 L145 300" stroke="#52751f" stroke-width="2.5" marker-end="url(#hw-ah)"/>
     <text x="153" y="278" font-size="11" fill="#52751f">期間をおいて</text>
     <text x="153" y="292" font-size="11" fill="#52751f">測る</text>
