@@ -65,4 +65,15 @@ if [ -f "$DEST/CHANGELOG.md" ]; then
   printf '──────────────────────────────────────\n'
 fi
 
-printf '\n次に Claude Code / codex で /rising-loop を使うと、必要なら loops/ の移行を提案します。\n'
+if [ "$OLD" = "(未導入)" ]; then
+  printf '\n── 次にやること ─────────────────────────\n'
+  printf '1. 材料を入れるフォルダを1つ作る（例: ~/rising/自社サービス）。\n'
+  printf '   中に数字の出どころを入れる: GA4 の CSV・売上の表・DB の書き出し・企画書など。多いほどよい\n'
+  printf '2. そのフォルダで Claude Code（Codex）を起動し、/rising-loop と打つ\n'
+  printf '──────────────────────────────────────\n'
+else
+  printf '\n── 次にやること ─────────────────────────\n'
+  printf 'すでにループがあるプロジェクトでは、Claude Code（Codex）にこう伝えてください:\n\n'
+  printf '   rising-loop が %s になったので、現行ループを合わせて\n\n' "$NEW"
+  printf '──────────────────────────────────────\n'
+fi
