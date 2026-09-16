@@ -323,6 +323,9 @@
   /* 定型の札。押すと本文に入るだけ。送信はしない */
   .m-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
   .m-chips[hidden]{display:none}
+  .m-chips button{padding:4px 10px;border:1px solid var(--line);border-radius:999px;background:var(--surface-2);
+    color:var(--sub);font-size:12.5px;cursor:pointer}
+  .m-chips button:hover{border-color:#779f38;color:var(--good)}
 
   /* トースト */
   #toast{position:fixed;right:20px;bottom:20px;z-index:96;max-width:min(420px,calc(100vw - 40px));
