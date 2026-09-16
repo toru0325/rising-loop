@@ -81,8 +81,13 @@
   /* 見出しはパネル上部のベタ塗り帯（白抜き）。パネルの padding ぶんを負のマージンで食って端まで塗る */
   #howto h3{margin:-22px -26px 0;padding:14px 26px;border-radius:11px 11px 0 0;background:#1c2821;color:#fff;
     font-size:18px;font-weight:700;letter-spacing:.02em}
-  #howto h3::before{content:'RISING LOOP';display:block;margin-bottom:2px;color:#ccef67;
-    font:700 10px ui-monospace,monospace;letter-spacing:.14em}
+  #howto h3{display:flex;align-items:center;justify-content:space-between;gap:16px}
+  /* 右側のブランド。薄く、RISING LOOP を大きく */
+  #howto h3 .brand{display:flex;flex-direction:column;align-items:flex-end;opacity:.62;line-height:1.15}
+  #howto h3 .brand b{color:#ccef67;font:800 16px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.22em}
+  #howto h3 .brand i{margin-top:3px;color:#dfe6d6;font:500 10px -apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;
+    font-style:normal;letter-spacing:.06em}
+  #howto h3 .brand .ver{color:#ccef67}
   #howto .lede:first-of-type{margin-top:16px}
   #howto .lede{margin:6px 0 0;color:var(--sub);font-size:14px;line-height:1.65}
   #howto .howto-fig{display:block;width:100%;height:auto;margin:0;border:1px solid var(--line-soft);border-radius:10px}
@@ -1364,7 +1369,7 @@ var LOOP_FUNNEL = {
 <!-- この画面の使い方。★仕組みは3つだけ: 見るだけの画面／指示文をコピーするボタン／貼ると AI が画面を書き換える -->
 <div id="howto" role="dialog" aria-modal="true" aria-labelledby="howto-t">
   <div class="h-panel">
-    <h3 id="howto-t">ライジング・ループの使い方</h3>
+    <h3 id="howto-t"><span>ライジング・ループの使い方</span><span class="brand"><b>RISING LOOP</b><i><span class="ver">v1.2.3</span> · Created by Voice App Lab</i></span></h3>
     <p class="lede">ライジング・ループは、ひとつの指標を計測し、その数字を上げるためのあらゆる施策を AI と共に進めるループシステムです。</p>
     <p class="lede">この画面は<b>見るだけ</b>です。ボタンを押しても何も実行されません。<b>指示文を作ってコピーする</b>だけ。それを<b>右のチャットに貼る</b>と AI が動き、この画面を書き換えます。</p>
     <div class="cols">
