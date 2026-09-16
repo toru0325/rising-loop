@@ -73,7 +73,7 @@
   #cc-help .h-cmd:hover{border-color:#779f38;background:#f2f6ec}
   #cc-help .h-cmd code{flex:1;min-width:0;white-space:pre-wrap;overflow-wrap:anywhere;
     font:12px/1.6 ui-monospace,Menlo,monospace;color:var(--ink)}
-  #cc-help .h-for{flex:0 0 auto;color:var(--dim);font-size:11.5px;font-weight:700}
+  #cc-help .h-who{margin-top:12px;color:var(--dim);font-size:12px;font-weight:700}
   #cc-help .h-actions{margin-top:18px;display:flex;justify-content:flex-end}
 
   .page{max-width:880px;margin:0 auto}
@@ -1254,14 +1254,16 @@ var LOOP_FUNNEL = {
   <div class="h-panel">
     <h3 id="cc-help-t">15秒たってもチャットが出ない？</h3>
     <p>右のチャットは、ターミナルで動いている Claude Code（または codex）を映しているだけです。動いていないと真っ黒になります。</p>
-    <div class="h-step">① どちらかをターミナルに貼って実行</div>
+    <div class="h-step">① 使う方をターミナルに貼って実行</div>
+    <div class="h-who">Claude Code を使う人</div>
     <button class="h-cmd" data-copy="sh /絶対パス/プロジェクト/loops/chat-pane.sh claude"
             data-foot="ターミナルに貼って実行してください。">
-      <code>sh /絶対パス/プロジェクト/loops/chat-pane.sh claude</code><span class="h-for">Claude Code</span>
+      <code>sh /絶対パス/プロジェクト/loops/chat-pane.sh claude</code>
     </button>
+    <div class="h-who">codex を使う人</div>
     <button class="h-cmd" data-copy="sh /絶対パス/プロジェクト/loops/chat-pane.sh codex"
             data-foot="ターミナルに貼って実行してください。">
-      <code>sh /絶対パス/プロジェクト/loops/chat-pane.sh codex</code><span class="h-for">codex</span>
+      <code>sh /絶対パス/プロジェクト/loops/chat-pane.sh codex</code>
     </button>
     <div class="h-step">② このページをリロード</div>
     <p>出るまで15秒ほどかかることがあります。</p>
