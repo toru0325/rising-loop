@@ -95,7 +95,10 @@ grep -l 'var SESS' loops/index.html; ls loops/chat-pane.sh
   2. `index.html` の右ペイン部分（`💡` の案内ブロックと `<script>` の `SESS`〜iframe 生成）を `assets/template.html` の同じ部分に差し替え、`PROJECT_DIR` と `PANES` を埋める
   3. 旧 `SESS` に入っていたセッションIDを `loops/.chat-sessions` に `<画面ID> claude <ID>` で書き移す（会話を捨てない）
 - 終わったら、ユーザーのターミナルで `sh …/loops/chat-pane.sh claude` を立て直してもらう。AI は起動しない
-- ★ **「rising-loop が X.Y.Z になったので、現行ループを合わせて」と言われたら、この節を実行する**（install.sh が更新後にこの文言を案内している）。数字の更新（「更新」）とは別。やることは①md の形式を最新に ②`index.html` の部品（使い方・札・右ペイン）を `assets/template.html` から写す ③下の版ごとの移行。終わったら何を変えたかを3行で報告する
+- ★ **「rising-loop が X.Y.Z になったので、現行ループを合わせて」と言われたら、この節を実行する**（install.sh が更新後にこの文言を案内している）。数字の更新（「更新」）とは別。やることは①md の形式を最新に ②`index.html` の共通部品を `assets/template.html` のものに**そっくり置き換える** ③下の版ごとの移行。終わったら何を変えたかを3行で報告する
+  - ★ ②は「無ければ足す」ではない。**あっても差し替える。** 共通部品とは: 右上のボタン枠（`#topbtns`）・使い方（`#howto` の CSS/markup/JS）・モーダルと定型の札（`#modal` `.m-chips` の CSS/JS）・トースト（`#toast`）・右ペイン（`#cc` `#cc-help` と接続 JS）・チェックリスト（`.checks`）・ボタン類（`.do` `.ins` `.cmt` `.upd` `.add-loop`）・「ループを追加」
+  - 置き換えたら、その部品の CSS と JS のブロックを template と diff し、**差が無いことを確認してから終わる**（★ 1.2.0 で札の文字サイズだけ旧のまま残った）
+  - 触らないもの: ループ固有の中身（md 由来の数字・本文・ID・`PROJECT_DIR`・`PANES`）
 - **1.1.0 より前の `loops/`**（`trial:` が1件の形／TRIAL と RECORD に同じ施策がある）も、同じタイミングで移行を提案する
   1. md の `trial:`（1件）を `trials:` の配列に包み直す。`plan` が要旨3行で ✅/⬜ が無ければ、`⬜ 1. 実現方法を決める` の1項目に置き換える
   2. TRIAL と RECORD の両方にある施策は、**1件ずつ「完了にしますか」と聞く**。はい → RECORD を残して TRIAL から外す（旧 RECORD がある＝本番投入済みなので、plan の ⬜ は無視してよい。予想が無ければ「未記録」）／いいえ → RECORD の項目を消して TRIAL に戻す（旧 RECORD にあった予想・判定日は LOG に退避して捨てない）。**勝手にどちらかに寄せない**（原理3）
