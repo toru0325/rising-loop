@@ -122,7 +122,7 @@ GOAL の中は上から **数字 → 折れ線 → レポート → LOG由来の
 loop: L01
 section: BOTTLENECK
 target: ゲーム枠の上にロック解除ボタンを置く
-rule: 必ずスキル rising-loop の手順で直すこと
+rule: まず /rising-loop を呼び出して最新の手順を読み、それに従うこと
 feedback: |
   ここに入力した本文
 ---

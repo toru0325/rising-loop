@@ -29,7 +29,7 @@ curl -fsSL https://raw.githubusercontent.com/toru0325/rising-loop/main/install.s
 rising-loop が X.Y.Z になったので、現行ループを合わせて
 ```
 
-必要な移行（md の形式・画面の部品）をスキルが提案します。
+ルートの画面と、開いている各ループの右ペインで、同じ文を一度ずつ送ってください。必要な移行（md の形式・画面の部品）をスキルが提案し、各ペインは最新の手順を読み直します。
 
 ## 以前 zip で入れた方へ
 
