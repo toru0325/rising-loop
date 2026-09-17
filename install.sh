@@ -38,8 +38,16 @@ if [ -d "$DEST" ] || [ -L "$DEST" ]; then
   OLD="$(cat "$DEST/VERSION" 2>/dev/null || printf '1.0.0 より前')"
 fi
 
+hint_update() {
+  printf '\n── 次にやること ─────────────────────────\n'
+  printf '各画面の右ペインのチャットに、この1行を貼って送る:\n\n'
+  printf '    rising-loop が %s になったので、このループを合わせて\n\n' "$NEW"
+  printf '──────────────────────────────────────\n'
+}
+
 if [ "$OLD" = "$NEW" ]; then
   printf '✔ すでに最新版（%s）です。\n' "$NEW"
+  hint_update
   exit 0
 fi
 
@@ -72,8 +80,5 @@ if [ "$OLD" = "(未導入)" ]; then
   printf '2. そのフォルダで Claude Code（Codex）を起動し、/rising-loop と打つ\n'
   printf '──────────────────────────────────────\n'
 else
-  printf '\n── 次にやること ─────────────────────────\n'
-  printf '各画面の右ペインのチャットに、この1行を貼って送る:\n\n'
-  printf '    rising-loop が %s になったので、このループを合わせて\n\n' "$NEW"
-  printf '──────────────────────────────────────\n'
+  hint_update
 fi
