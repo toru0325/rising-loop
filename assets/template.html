@@ -743,7 +743,7 @@
       <div class="sec-right"><button class="cmt" data-id="L02" data-sec="施策の実行" data-loop="来た人が、次の日もまた来る割合を30%に">コメント</button></div>
       <div class="trial empty">
         <div class="trial-top"><div class="trial-name">施策待ちです</div></div>
-        <div class="todo"><ul><li>ボトルネックの施策案から「これをやって」と送ると、ここに入ります</li></ul></div>
+        <div class="todo"><ul><li>ボトルネックの施策案から「TRIAL に移す」を送ると、ここに入ります</li></ul></div>
       </div>
     </div>
 
@@ -829,7 +829,7 @@
   var modal=document.getElementById('modal'), mInput=document.getElementById('m-input');
   var mTitle=document.getElementById('m-title'), mSub=document.getElementById('m-sub');
   var PH_CMT='このセクションへのフィードバックをどうぞ。';
-  var PH_DO='これをやって／これは消して／この認識は違う、など。そのままどうぞ。';
+  var PH_DO='これを TRIAL に移して手順を出して（実装はしない）／これは消して／この認識は違う、など。そのままどうぞ。';
   var cur=null;
   function openModal(cfg){
     cur=cfg;
@@ -837,7 +837,7 @@
     mTitle.textContent = cfg.title;
     mSub.textContent = cfg.sub || '';
     mInput.placeholder = cfg.ph;
-    //=== 定型の札。指示のときだけ。施策案は「これをやって」、TRIAL は「完了にして（評価に移す）」が先頭
+    //=== 定型の札。指示のときだけ。施策案は「TRIAL に移す」（本文は「これを TRIAL に移して手順を出して（実装はしない）」）、TRIAL は「完了にして（評価に移す）」が先頭
     var chips = document.getElementById('m-chips'); chips.innerHTML = '';
     (cfg.chips || []).forEach(function(c){
       var b = document.createElement('button'); b.type = 'button'; b.setAttribute('data-chip', c[1]); b.textContent = c[0]; chips.appendChild(b);
@@ -923,7 +923,7 @@
     if(d){ e.preventDefault(); e.stopPropagation();
       var did=d.getAttribute('data-id'), dno=d.getAttribute('data-no'), dtx=d.getAttribute('data-text');
       openModal({ kick:'INSTRUCTION', title:'施策案 '+dno+'について', sub:dtx, ph:PH_DO,
-        chips:[['これをやって','これをやって'],['これは消して','これは消して'],['この認識は違う','この認識は違う。']],
+        chips:[['TRIAL に移す','これを TRIAL に移して手順を出して（実装はしない）'],['これは消して','これは消して'],['この認識は違う','この認識は違う。']],
         compose:function(v){ return block(did, 'BOTTLENECK', dtx, v); } });
       return; }
     var cm = e.target.closest('.cmt');
@@ -1369,7 +1369,7 @@ var LOOP_FUNNEL = {
 <!-- この画面の使い方。★仕組みは3つだけ: 見るだけの画面／指示文をコピーするボタン／貼ると AI が画面を書き換える -->
 <div id="howto" role="dialog" aria-modal="true" aria-labelledby="howto-t">
   <div class="h-panel">
-    <h3 id="howto-t"><span>ライジング・ループの使い方</span><span class="brand"><b>RISING LOOP</b><i><span class="ver">v1.2.4</span> · Created by Voice App Lab</i></span></h3>
+    <h3 id="howto-t"><span>ライジング・ループの使い方</span><span class="brand"><b>RISING LOOP</b><i><span class="ver">v1.2.5</span> · Created by Voice App Lab</i></span></h3>
     <p class="lede">ライジング・ループは、ひとつの指標を計測し、その数字を上げるためのあらゆる施策を AI と共に進めるループシステムです。</p>
     <p class="lede">この画面は<b>見るだけ</b>です。ボタンを押しても何も実行されません。<b>指示文を作ってコピーする</b>だけ。それを<b>右のチャットに貼る</b>と AI が動き、この画面を書き換えます。</p>
     <div class="cols">
@@ -1415,7 +1415,7 @@ var LOOP_FUNNEL = {
       <div>
     
     <ol class="steps">
-      <li><div><b>施策を始めるには</b>、やりたい施策の「📋 指示する」を押して<b>「これをやって」</b>を選び、コピー。右のチャットに貼って Enter。実装が全部 ✅ になったら、同じ「指示する」から<b>「完了にして（評価に移す）」</b></div></li>
+      <li><div><b>施策を始めるには</b>、やりたい施策の「📋 指示する」を押して<b>「TRIAL に移す」</b>を選び、コピー。右のチャットに貼って Enter。実装が全部 ✅ になったら、同じ「指示する」から<b>「完了にして（評価に移す）」</b></div></li>
       <li><div><b>ボタンはぜんぶ指示文を作るだけ。</b>コメント・更新・指示、どれも右のチャットに貼って初めて動きます</div></li>
       <li><div><b>ループの期間を決めて</b>（1日1回、週1回、など）、都度「更新」を押して AI に指示。全体のステータスが更新されるので、次の施策に進みます</div></li>
     </ol>
