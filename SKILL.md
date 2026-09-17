@@ -95,7 +95,7 @@ grep -l 'var SESS' loops/index.html; ls loops/chat-pane.sh
   2. `index.html` の右ペイン部分（`💡` の案内ブロックと `<script>` の `SESS`〜iframe 生成）を `assets/template.html` の同じ部分に差し替え、`PROJECT_DIR` と `PANES` を埋める
   3. 旧 `SESS` に入っていたセッションIDを `loops/.chat-sessions` に `<画面ID> claude <ID>` で書き移す（会話を捨てない）
 - 終わったら、ユーザーのターミナルで `sh …/loops/chat-pane.sh claude` を立て直してもらう。AI は起動しない
-- ★ **「rising-loop が X.Y.Z になったので、このループを合わせて」と言われたら、この節を実行する**（「現行ループを合わせて」でも同じ）（install.sh が更新後にこの文言を案内している）。数字の更新（「更新」）とは別
+- ★ **「rising-loop が X.Y.Z になったので、このループを合わせて」と言われたら、この節を実行する**（install.sh が更新後にこの文言を案内している）。数字の更新（「更新」）とは別
   - **最初に `/rising-loop` を呼び出して SKILL.md を読み直す。** このスレッドが更新前から続いていれば、古い規約が文脈に残っている。読み直しで上書きする
   - 次に `loops/index.html` の使い方の帯にある版（`v1.2.3` など）を見る。**スキルの `VERSION` と同じなら「読み直しました。合わせ済みです」と1行で終える。** 違うときだけ以下をやる
   - やることは①md の形式を最新に ②`index.html` の共通部品を `assets/template.html` のものに**そっくり置き換える** ③下の版ごとの移行。終わったら何を変えたかを3行で報告する
