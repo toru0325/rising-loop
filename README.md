@@ -27,13 +27,13 @@ curl -fsSL https://raw.githubusercontent.com/toru0325/rising-loop/main/install.s
 
 1. このサービス専用のフォルダを1つ作る（例: `~/rising/自社サービス`）。企画書や仕様など、サービスの説明になるものがあれば入れておく
 2. そのフォルダで Claude Code（Codex）を起動し、`/rising-loop` と打つ
-3. 目標の例が10個出るので、番号か自分の言葉で答える。AI がループの画面（`loops/index.html`）を作る。以後はこの画面が入口
+3. 目標の例を参考に、自分のゴールを答える。AI がループの画面（`loops/index.html`）を作る。以後はこの画面が入口
 
 右ペインの AI チャットに `ttyd` が必要です（macOS: `brew install ttyd`）。無ければスキルが止まって案内します。
 
 ## 効果を上げるコツ
 
-数字が自動で取れる口を、できるだけ多く AI につなぐこと。GA4・Search Console・Stripe・Shopify・広告管理画面・自社 DB・Google Sheets などの API や MCP をつなぐほど、AI が自分で数字を取りに行けるようになり、更新が速く、評価が正確になります。つなぐ口が無いうちは CSV を手で入れても始められます。
+数字が自動で取れる口を、できるだけ多く AI につなぐこと。GA4・Search Console・Stripe・Shopify・広告管理画面・自社 DB・Google Sheets などの API や MCP をつなぐほど、AI が自分で数字を取りに行けるようになり、更新が速く、評価が正確になります。つなぐ口が無い場合は、都度 CSV を渡したり、Claude Code にブラウザを操作させて数字を取るのもおすすめです。
 
 ## 更新したあと
 
