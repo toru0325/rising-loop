@@ -1,0 +1,519 @@
+  :root{
+    --shell:#f0f2ed; --surface:#fffefb; --surface-2:#f5f7f2; --surface-3:#eaeee7;
+    --line:#cbd2cb; --line-soft:#e1e5df;
+    --ink:#1c2821; --sub:#536159; --dim:#87918b;
+    --accent:#ccef67; --accent-ink:#203018;
+    --good:#52751f; --warn:#9b6518; --bad:#b95448;
+  }
+  *{box-sizing:border-box}
+  html{background:var(--shell)}
+  body{margin:0;padding:34px 20px 90px;min-height:100vh;color:var(--ink);background:var(--shell);
+    font-family:Inter,"Hiragino Sans","Yu Gothic UI","Yu Gothic",sans-serif;-webkit-font-smoothing:antialiased}
+  button{font:inherit}
+
+  /* ── Claude Code の右ペイン（ttyd を iframe で出すだけ。ここでは入力を受けない） ── */
+  :root{--pane:360px}
+  body.pane-on{padding-right:calc(20px + var(--pane))}
+  #cc{position:fixed;top:0;right:0;width:var(--pane);height:100vh;z-index:90;
+    display:none;flex-direction:column;background:#1e1e1e;border-left:1px solid var(--line)}
+  body.pane-on #cc{display:flex}
+  #cc .cc-bar{flex:0 0 auto;display:flex;padding:8px 10px;
+    background:#161616;border-bottom:1px solid #2a2a2a}
+  #cc .cc-ask{flex:0 0 auto;cursor:pointer;padding:3px 9px;border-radius:5px;
+    border:1px solid #3a3a3a;background:#222;color:#9aa79b;
+    font:700 11px/1.5 -apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif}
+  #cc .cc-ask:hover{border-color:#779f38;color:var(--accent)}
+  /* ★画面ごとに iframe を1枚ずつ持ち、重ねて置く。src を書き換えると接続が切れて
+     claude --resume が最初からになり10秒待たされるので、表示の切替だけで済ませる。
+     display:none だと幅が0になり、戻したとき xterm が組み直して一瞬崩れる。visibility を使う */
+  #cc .cc-stack{position:relative;flex:1 1 auto;min-height:0}
+  #cc .cc-stack iframe{position:absolute;inset:0;width:100%;height:100%;border:0;
+    background:#1e1e1e;visibility:hidden}
+  #cc .cc-stack iframe.on{visibility:visible}
+  /*=== 右ペインの開閉。角丸の緑ボタン。▸◂ は「どちらへ動くか」を指す ===*/
+  #cc-toggle{padding:3px 7px;border-radius:5px;
+    border:1px solid #54604d;background:var(--good);color:#fff;cursor:pointer;
+    font:700 12px/1.4 -apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif}
+  #cc-toggle:hover{background:#456219;border-color:#456219}
+  /* ペインが開いている間は、トーストもトグルもペインの左隣に寄せる */
+  body.pane-on #toast{right:calc(12px + var(--pane));max-width:min(420px,calc(100vw - 40px - var(--pane)))}
+  /* ── 貼り先の案内。右ペインが開いているときだけ、右向きの矢印で「あっち」を指す ── */
+  #toast .t-foot{display:flex;align-items:center;gap:8px}
+  #toast .t-foot .arrow{display:none;color:var(--good);font-size:18px;line-height:1;animation:nudge 1s ease-in-out infinite}
+  body.pane-on #toast.to-chat .t-foot .arrow{display:inline-block}
+  body.pane-on #toast.to-chat .t-foot{color:var(--good);font-weight:700}
+  @keyframes nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(5px)}}
+  /* ── 右上の「使い方」。AI トグルの左隣 ── */
+  /* 右上のボタン2つは1つの枠に並べる（隙間 6px）。個別に right を決め打ちしない */
+  #topbtns{position:fixed;top:18px;right:18px;z-index:95;display:flex;align-items:center;gap:6px}
+  body.pane-on #topbtns{right:calc(18px + var(--pane))}
+  #howto-btn{padding:3px 9px;border-radius:5px;
+    border:1px solid var(--line);background:var(--surface);color:var(--sub);cursor:pointer;
+    font:700 12px/1.5 -apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif}
+  #howto-btn:hover{border-color:#779f38;color:var(--good)}
+  #howto{position:fixed;inset:0;z-index:97;display:none;align-items:center;justify-content:center;
+    padding:20px;background:rgba(28,40,33,.34)}
+  #howto.on{display:flex}
+  #howto .h-panel{width:100%;max-width:860px;max-height:calc(100vh - 40px);overflow:auto;
+    border:1px solid var(--line);border-radius:12px;
+    background:var(--surface);box-shadow:0 18px 48px rgba(28,40,33,.22);padding:22px 26px}
+  /* 見出しはパネル上部のベタ塗り帯（白抜き）。パネルの padding ぶんを負のマージンで食って端まで塗る */
+  #howto h3{margin:-22px -26px 0;padding:14px 26px;border-radius:11px 11px 0 0;background:#1c2821;color:#fff;
+    font-size:18px;font-weight:700;letter-spacing:.02em}
+  #howto h3{display:flex;align-items:center;justify-content:space-between;gap:16px}
+  /* 右側のブランド。薄く、RISING LOOP を大きく */
+  #howto h3 .brand{display:flex;flex-direction:column;align-items:flex-end;opacity:.62;line-height:1.15}
+  #howto h3 .brand b{color:#ccef67;font:800 16px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.22em}
+  #howto h3 .brand i{margin-top:3px;color:#dfe6d6;font:500 10px -apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;
+    font-style:normal;letter-spacing:.06em}
+  #howto h3 .brand .ver{color:#ccef67}
+  #howto .lede:first-of-type{margin-top:16px}
+  #howto .lede{margin:6px 0 0;color:var(--sub);font-size:14px;line-height:1.65}
+  #howto .howto-fig{display:block;width:100%;height:auto;margin:0;border:1px solid var(--line-soft);border-radius:10px}
+  #howto .cols{display:grid;grid-template-columns:250px 1fr;gap:22px;margin-top:14px;align-items:start}
+  @media(max-width:640px){#howto .cols{grid-template-columns:1fr}}
+  #howto .free{margin-top:14px;padding:12px 16px;border-radius:10px;background:var(--surface-2);font-size:14px;line-height:1.65}
+  #howto .free b{display:block;font-size:15px;margin-bottom:4px}
+  #howto .free ul{margin:4px 0 6px;padding-left:18px;list-style:disc}
+  #howto .free li{padding:0}
+  #howto ol.steps{margin:0;padding-left:0;list-style:none;counter-reset:st}
+  #howto ol.steps>li{counter-increment:st;display:flex;gap:12px;padding:7px 0;border-top:1px solid var(--line-soft);
+    font-size:14px;line-height:1.65}
+  #howto ol.steps>li::before{content:counter(st);flex:0 0 24px;height:24px;border-radius:50%;background:var(--accent);
+    color:var(--accent-ink);font:700 12px/24px ui-monospace,monospace;text-align:center}
+  #howto li b{color:var(--ink)}
+  #howto .h-actions{margin-top:14px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+  #howto .h-note{color:var(--dim);font-size:12.5px}
+  /* ── 「15秒たってもチャットが出ない？」の説明。右ペインの上に出すので z-index はトグルより上 ── */
+  #cc-help{position:fixed;inset:0;z-index:97;display:none;align-items:center;justify-content:center;
+    padding:20px;background:rgba(28,40,33,.34)}
+  #cc-help.on{display:flex}
+  #cc-help .h-panel{width:100%;max-width:460px;border:1px solid var(--line);border-radius:12px;
+    background:var(--surface);box-shadow:0 18px 48px rgba(28,40,33,.22);padding:22px 24px}
+  #cc-help h3{margin:0;font-size:19px;font-weight:650}
+  #cc-help p{margin:11px 0 0;font-size:14px;line-height:1.75;color:var(--sub)}
+  #cc-help .h-step{margin-top:16px;font-size:13.5px;font-weight:700}
+  #cc-help .h-cmd{display:flex;align-items:center;gap:10px;width:100%;margin-top:7px;padding:9px 11px;
+    border:1px solid var(--line);border-radius:8px;background:var(--surface-2);cursor:pointer;text-align:left}
+  #cc-help .h-cmd:hover{border-color:#779f38;background:#f2f6ec}
+  #cc-help .h-cmd code{flex:1;min-width:0;white-space:pre-wrap;overflow-wrap:anywhere;
+    font:12px/1.6 ui-monospace,Menlo,monospace;color:var(--ink)}
+  #cc-help .h-who{margin-top:12px;color:var(--dim);font-size:12px;font-weight:700}
+  #cc-help .h-actions{margin-top:18px;display:flex;justify-content:flex-end}
+
+  .page{max-width:880px;margin:0 auto}
+
+  .screen{display:none}
+  .screen.active{display:block;animation:reveal .18s ease both}
+  @keyframes reveal{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+
+  .flow{border:1px solid var(--line);background:var(--surface)}
+  .section{padding:29px 32px;border-bottom:1px solid var(--line)}
+  .section:last-child{border-bottom:0}
+  .section-head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px}
+  /*=== セクションの見出し。区切り線の上に乗る塗りのタブが、そのまま見出しを兼ねる。
+       色でセクションの種類が分かるようにしてある（ループを行き来しても同じ色が同じ意味）===*/
+  .section{position:relative}
+  .section.tabbed{padding-top:62px}
+  /*=== 右端を斜めに切った台形。文字が欠けないよう右の余白を広くとる ===*/
+  /*=== 3つの文字を縦中央で揃える。line-height をそれぞれ 1 にしないと、
+       行送りの差だけ英字が上にずれる ===*/
+  .sec-tab{position:absolute;top:0;left:0;display:flex;align-items:center;gap:12px;
+    padding:14px 36px 14px 20px;z-index:1;line-height:1;
+    /*=== ⚠️ clip-path と filter を同じ要素に置くと、影が clip に切られて消える。
+         形（台形）は ::before に、影は本体に分ける ===*/
+    filter:drop-shadow(1px 2px 3px rgba(28,40,33,.16))}
+  .sec-tab::before{content:"";position:absolute;inset:0;z-index:-1;background:var(--tt);
+    clip-path:polygon(0 0,100% 0,calc(100% - 18px) 100%,0 100%)}
+  .sec-tab .k{font:700 10.5px/1 ui-monospace,monospace;letter-spacing:.14em;position:relative;top:1px}
+  .sec-tab .ja{font-size:20px;line-height:1;font-weight:700;letter-spacing:.02em}
+  .sec-tab .lid{color:inherit;opacity:.7;font-weight:400;line-height:1;position:relative;top:1px}
+  /*=== 二層。色はセクションの上端に引く4pxの線が持ち、タブ自体は薄い地に濃い文字。
+       線はセクションの幅いっぱいに伸ばして、どこからどこまでが1つかを示す ===*/
+  .section.t-goal      {--tc:#3f5a72; --tt:#eaeff4; --td:#33495c}
+  .section.t-bottleneck{--tc:#9b6518; --tt:#f7efe2; --td:#7d5214}
+  .section.t-trial     {--tc:#52751f; --tt:#eef4e4; --td:#3f5c17}
+  .section.t-record    {--tc:#46534b; --tt:#eef1ec; --td:#2c3a32}
+  .section.t-loops     {--tc:#74827a; --tt:#eef1ec; --td:#3f4b44}
+  .section.tabbed,
+  .section.t-goal{border-top:4px solid var(--tc)}
+  .sec-tab{color:var(--td)}
+  .sec-tab .k{opacity:.62}
+  .sec-right{position:absolute;right:30px;top:15px;display:flex;align-items:center;gap:12px;z-index:1}
+  /*=== ループ名は長いのでタブに入れず、タブの下の大見出しに残す ===*/
+  .goal-name{margin-top:6px}
+  .section-title{margin:7px 0 0;font-size:24px;line-height:1.45;font-weight:650;letter-spacing:.01em}
+  .kicker{color:var(--dim);font:700 11px ui-monospace,monospace;letter-spacing:.12em}
+  .kicker.alert{color:var(--warn)}
+  .lid{color:var(--dim);font-weight:400;letter-spacing:.04em}
+  .quiet-button{padding:4px 0;border:0;color:var(--dim);background:transparent;font-size:12.5px;cursor:pointer}
+  .quiet-button:hover{color:var(--ink)}
+
+  /* 戻る */
+  .back{display:inline-flex;align-items:center;gap:7px;margin:0 0 10px;padding:5px 0;border:0;background:transparent;
+    color:var(--dim);font-size:14px;cursor:pointer;text-align:left;line-height:1.6}
+  .back:hover{color:var(--good)}
+  .back .arw{font:11px ui-monospace,monospace}
+
+  /*=== 累計売上。金額を持つループの合算 ===*/
+  /* ⚠️ 状態ピルの「評価中」も class="st rev" なので、セレクタを絞らないと
+     そちらにも border-top と余白が当たる（2026-09-10 に一覧で線が出た） */
+  .section > .rev{margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}
+  .rev-total{display:flex;align-items:baseline;gap:12px;color:var(--dim);font-size:12.5px}
+  .rev-total b{color:var(--good);font:500 30px ui-monospace,monospace;letter-spacing:-.02em}
+  .rev-break{margin-top:7px;color:var(--sub);font-size:14.5px;line-height:1.7}
+  .rev-note{margin-top:5px;color:var(--dim);font-size:12.5px;line-height:1.7}
+
+  /* 一覧 */
+  .loop-list{display:grid;gap:1px;background:var(--line-soft);border:1px solid var(--line-soft);margin-top:20px}
+  .loop-row{display:grid;grid-template-columns:1fr 168px 100px 18px;gap:16px;padding:17px 18px;background:var(--surface);
+    align-items:center;border:0;width:100%;text-align:left;cursor:pointer;font:inherit;color:inherit}
+  .loop-row:hover{background:#f7faf2}
+  .loop-row.dimmed{background:var(--surface-2)}
+  .loop-row.dimmed:hover{background:var(--surface-3)}
+  .loop-name{font-size:17px;font-weight:650;line-height:1.5}
+  /*=== 一覧のタイトル頭に付くID。タイトルは言い換わるがIDは変わらないので、これが目印になる ===*/
+  .lid-pill{display:inline-block;vertical-align:2px;margin-right:9px;padding:3px 9px;border-radius:999px;
+    border:1px solid #74827a;color:#fff;background:#74827a;
+    font:700 11px ui-monospace,monospace;letter-spacing:.06em}
+  .loop-sub{margin-top:6px;color:var(--dim);font-size:14px;line-height:1.6}
+  /*=== 「いま / 目標」。いまの値だけ大きく色を付け、目標は添えるだけにする ===*/
+  .loop-num{font:500 13.5px ui-monospace,monospace;color:var(--dim);white-space:nowrap;line-height:1.4}
+  .loop-num b{color:var(--good);font:500 23px/1 ui-monospace,monospace;letter-spacing:-.02em;margin-right:3px}
+  /*=== 一覧に出す進捗バー。GOAL の .progress-track を小さくしたもの ===*/
+  .loop-bar{height:9px;margin-top:9px;border:1px solid #8d9891;background:#f5f6f2;overflow:hidden}
+  .loop-bar i{display:block;height:100%;
+    background:radial-gradient(circle at 1px 1px,rgba(255,255,255,.58) .8px,transparent .9px),#315e46;
+    background-size:3px 3px}
+  .chev{color:var(--dim);font:12px ui-monospace,monospace;text-align:right}
+  /*=== 一覧のステータス。★件数を数えるだけで、状態の enum は作らない。
+       実行中＝TRIAL にあるもの（trials の件数）／評価中＝RECORD にあるもの。同じ施策は片方にしかいない。
+       色は8pxの点だけに持たせ、数字を大きくする（遠目には数字が読めればいい）===*/
+  .state{min-width:0}
+  .state .st{display:flex;align-items:center;gap:6px;margin-top:6px;white-space:nowrap}
+  .state .st:first-child{margin-top:0}
+  .state .st-dot{flex:0 0 auto;width:8px;height:8px;border-radius:50%}
+  .state .st-n{font:700 17px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:-.02em}
+  .state .st-lb{font-size:11px;font-weight:600;color:var(--dim)}
+  .state .run .st-dot{background:var(--good)}
+  .state .run .st-n{color:var(--good)}
+  .state .rev .st-dot{background:var(--warn)}
+  .state .rev .st-n{color:var(--warn)}
+  .state .idle{color:var(--dim);font-size:12px;font-weight:600}
+  .state .idle .st-dot{background:transparent;border:1px solid var(--line)}
+
+  /* GOAL */
+  .goal-name{margin:9px 0 0;font-size:31px;line-height:1.4;font-weight:650;letter-spacing:.01em}
+  .goal-name.sm{font-size:26.5px}
+  .goal-numbers{margin-top:23px;display:grid;grid-template-columns:auto 1fr auto;align-items:end;gap:18px}
+  .number-block{min-width:84px}
+  .number-label{color:var(--dim);font-size:12.5px}
+  .number{margin-top:6px;font:500 36px ui-monospace,monospace;letter-spacing:-.03em}
+  /*=== 件数の下に添える金額。単価を持つループだけ出る（いまは L01 のみ）===*/
+  .number-money{margin-top:3px;color:var(--good);font:500 15px ui-monospace,monospace}
+  .money-note{margin:8px 0 0;color:var(--dim);font-size:12.5px;line-height:1.7}
+  .number small{font:500 14px inherit;color:var(--sub)}
+  .progress-wrap{padding-bottom:6px}
+  .progress-track{height:18px;overflow:hidden;border:1px solid #8d9891;background:#f5f6f2}
+  .progress-fill{transition:width .25s ease-out;height:100%;background:radial-gradient(circle at 1px 1px,rgba(255,255,255,.58) .8px,transparent .9px),#315e46;background-size:3px 3px}
+  .progress-meta{margin-top:7px;display:flex;justify-content:space-between;color:var(--dim);font:11px ui-monospace,monospace}
+  .forecast{margin-top:19px;color:var(--sub);font-size:17px;line-height:1.75}
+  .forecast strong{color:var(--ink);font-weight:600}
+
+  /* BOTTLENECK */
+  .sub-head{margin-top:26px;color:var(--sub);font-size:15px;font-weight:650}
+  /*=== 横向きファネル（案F）。高さは実データの対数で、先細りがそのまま落ち方になる ===*/
+  .funnel-f{margin-top:14px}
+  .funnel-f svg{display:block}
+  .funnel-f .fallback{display:flex;flex-wrap:wrap;gap:6px 18px;padding:14px 0}
+  .funnel-f .fallback b{font:500 19px ui-monospace,monospace;margin-left:6px}
+  .funnel-f .fallback span{color:var(--sub);font-size:14px}
+
+  .story{margin-top:14px;padding:16px 18px;border-left:2px solid #bd852f;color:var(--sub);background:var(--surface-2);font-size:15px;line-height:1.9}
+  .story b{color:var(--ink);font-weight:600}
+  .story ul{margin:0;padding-left:0;list-style:none}
+  .story ul li + li{margin-top:2px}
+
+  .split{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line-soft);border:1px solid var(--line-soft)}
+  .split-col{background:var(--surface);padding:12px 14px}
+  .split-title{color:var(--dim);font-size:12.5px;margin-bottom:8px}
+  .split-row{display:grid;grid-template-columns:1fr auto auto;gap:10px;padding:6px 0;font-size:14px;align-items:baseline}
+  .split-row span:nth-child(2){color:var(--dim);font-family:ui-monospace,monospace;font-size:12.5px}
+  .split-row b{min-width:40px;text-align:right;font:600 13px ui-monospace,monospace}
+  .split-row.bad b{color:var(--bad)}
+
+  .open-list{margin-top:14px;border-top:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft)}
+  .open-item{padding:13px 2px;border-bottom:1px solid var(--line-soft);font-size:15.5px;line-height:1.7;
+    display:grid;grid-template-columns:auto 1fr;gap:13px;align-items:start}
+  .open-item:last-child{border-bottom:0}
+  /*=== 施策案の左に置く番号のピル。「3番やって」と口で言えるように番号を残す ===*/
+  /*=== 幅を決め打ちしない。中身に合わせて縮む（決め打ちだと横に間延びする）===*/
+  .idea-pill{display:inline-block;padding:4px 13px;border-radius:999px;
+    border:1px solid #54604d;background:var(--good);color:#fff;
+    font:700 13px/1.5 -apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif;
+    white-space:nowrap;position:relative;top:1px}
+  .idea-pill .bulb{margin-right:5px;font-size:12px}
+  .open-item.active{font-weight:600}
+  /* --- GOAL の履歴（計測日・折れ線・その区間の記録） --- */
+  .hist{margin-top:14px;border-top:1px solid var(--line-soft);padding-top:12px}
+  .hist-top{display:flex;align-items:center;gap:10px}
+  .hist-note{margin-left:auto;font-size:13px;color:var(--dim)}
+  .hist-chart{margin-top:10px}
+  .hist-chart svg{display:block}
+  .hist-report{margin-top:12px}
+  .hist-report .hr-title{font-size:12.5px;letter-spacing:.08em;color:var(--dim);font-weight:700}
+  .hist-report .hr-when{margin-left:8px;font-weight:400;letter-spacing:0;font-size:12px}
+  .hist-recs{margin-top:12px;padding:14px 17px;border:1px solid var(--line-soft);
+             background:var(--surface-2)}
+  .hist-recs:empty{display:none}
+  .hist-recs .hr-head{font-size:12.5px;letter-spacing:.08em;color:var(--dim);
+                      font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .hist-recs .hr-head + ul + .hr-head{margin-top:12px;padding-top:12px;
+                                      border-top:1px solid var(--line-soft);display:block}
+  .hist-recs ul{margin:6px 0 0;padding-left:0;list-style:none}
+  .hist-recs li{display:flex;gap:12px;font-size:14.5px;color:var(--sub);padding:2px 0}
+  .hist-recs li b{flex:0 0 34px;color:var(--dim);font-weight:400;
+                  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
+  .open-note{margin-top:12px;color:var(--dim);font-size:13px;line-height:1.8}
+  .open-item{grid-template-columns:auto 1fr auto}
+  /* 指示ボタン。★押しても「実行」はされない。指示文を作ってコピーするだけ。見た目もそれに寄せる（📋 の札） */
+  .do{opacity:0;padding:5px 10px;border:1px dashed var(--line);border-radius:7px;background:var(--surface);
+    color:var(--sub);font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;transition:opacity .12s}
+  .open-item:hover .do,.do:focus{opacity:1}
+  .do:hover{border-color:#779f38;color:var(--good)}
+  .do::before,.ins::before,.cmt::before,.add-loop::before{content:'📋 ';font-size:11px}
+  /* 一覧が0件のときの目標の例。文言の正は SKILL.md */
+  .loop-ideas{margin-top:16px;padding:14px 18px;border:1px dashed var(--line);border-radius:10px;color:var(--dim)}
+  .loop-ideas .li-head{font-size:12.5px;font-weight:700}
+  .loop-ideas ul{margin:8px 0 0;padding-left:18px;font-size:14px;line-height:1.8;columns:2}
+  .loop-ideas p{margin:10px 0 0;font-size:12.5px}
+  @media(hover:none){.do{opacity:1}}
+
+  .head-right{display:flex;align-items:center;gap:12px}
+  .cmt,.upd,.ins,.add-loop{padding:5px 10px;border:1px dashed var(--line);border-radius:7px;background:transparent;
+    color:var(--dim);font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+  .cmt:hover,.upd:hover,.ins:hover,.add-loop:hover{border-color:#779f38;color:var(--good);background:var(--surface)}
+
+  /* コメント入力 */
+  #modal{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;
+    padding:20px;background:rgba(28,40,33,.34)}
+  #modal.on{display:flex}
+  body.pane-on #modal,body.pane-on #howto{right:var(--pane)}   /* 右ペインの下に潜らない */
+  .m-panel{width:100%;max-width:520px;border:1px solid var(--line);border-radius:12px;background:var(--surface);
+    box-shadow:0 18px 48px rgba(28,40,33,.22);padding:24px 26px}
+  .m-kick{color:var(--dim);font:700 10px ui-monospace,monospace;letter-spacing:.12em}
+  .m-title{margin:8px 0 0;font-size:22px;font-weight:650;line-height:1.5}
+  .m-sub{margin-top:8px;color:var(--dim);font-size:14px;line-height:1.7}
+  .m-input{width:100%;margin-top:16px;padding:13px 14px;min-height:104px;resize:vertical;
+    border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);
+    font-size:15.5px;line-height:1.8}
+  .m-input:focus{outline:0;border-color:#779f38}
+  .m-actions{margin-top:18px;display:flex;justify-content:flex-end;gap:8px}
+  .m-hint{margin-top:12px;color:var(--dim);font-size:12.5px}
+  /* 定型の札。押すと本文に入るだけ。送信はしない */
+  .m-chips{display:flex;flex-wrap:wrap;gap:4px 5px;margin-top:10px}
+  .m-chips[hidden]{display:none}
+  .m-chips button{padding:2px 8px;border:1px solid var(--line);border-radius:999px;background:var(--surface-2);
+    color:var(--sub);font-size:11.5px;line-height:1.5;cursor:pointer}
+  .m-chips button:hover{border-color:#779f38;color:var(--good)}
+
+  /* トースト */
+  #toast{position:fixed;right:20px;bottom:20px;z-index:96;max-width:min(420px,calc(100vw - 40px));
+    padding:14px 16px;border:1px solid #54604d;border-radius:10px;background:var(--surface);
+    box-shadow:0 6px 22px rgba(28,40,33,.14);opacity:0;transform:translateY(8px);
+    transition:opacity .18s ease,transform .18s ease}
+  /* 隠れている間は透過（下のボタンを塞がない）、出ている間だけ押せる。押すと閉じる */
+  #toast{pointer-events:none}
+  #toast.on{opacity:1;transform:none;pointer-events:auto;cursor:pointer}
+  #toast .t-head{color:var(--good);font:700 10px ui-monospace,monospace;letter-spacing:.12em}
+  #toast .t-body{margin-top:8px;font-size:14.5px;line-height:1.7;color:var(--ink);
+    word-break:break-word;border-left:2px solid var(--line-soft);padding-left:10px}
+  #toast .t-foot{margin-top:9px;color:var(--dim);font-size:12.5px}
+  #toast.err{border-color:#7d6a44}
+  #toast.err .t-head{color:var(--warn)}
+
+  /* TRIAL */
+  .trial{margin-top:18px;padding:17px 19px;border:1px solid var(--line-soft);background:var(--surface-2)}
+  .trial.empty{border-style:dashed;background:transparent}
+  .trial-top{display:flex;justify-content:space-between;align-items:baseline;gap:16px}
+  .trial-name{font-size:18.5px;font-weight:650}
+  .trial-status{color:var(--warn);font-size:12.5px;font-weight:700;white-space:nowrap}
+  .trial-name.dim{color:var(--dim);font-weight:500}
+  .todo{margin-top:14px;padding-top:12px;border-top:1px solid var(--line-soft)}
+  .todo-title{color:var(--dim);font-size:12.5px}
+  .todo ul{margin:8px 0 0;padding-left:16px;color:var(--sub);font-size:15px;line-height:1.9}
+  /* 実現手順のチェックリスト。md の plan の ✅/⬜ をそのまま写す。全部 ✅ で実施完了（TRIAL には止まる） */
+  .todo ul.checks{list-style:none;padding-left:0}
+  .todo ul.checks li{padding:1px 0}
+  .trial + .trial{margin-top:12px}
+  .actions{margin-top:18px;display:flex;justify-content:flex-end;gap:8px}
+  .button{height:40px;padding:0 17px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}
+  .button-primary{border:1px solid var(--accent);color:var(--accent-ink);background:var(--accent)}
+  .button-primary:hover{background:#e5ff9d}
+  .button-secondary{border:1px solid var(--line);color:var(--ink);background:transparent}
+  .button-secondary:hover{background:var(--surface-3)}
+
+  /* RECORD */
+  .rec{margin-top:16px;display:grid;gap:1px;background:var(--line-soft);border:1px solid var(--line-soft)}
+  .rec-row{display:grid;grid-template-columns:112px 1fr auto;gap:14px;padding:12px 14px;background:var(--surface);font-size:15px;line-height:1.6;align-items:baseline}
+  .rec-v{justify-self:start;display:inline-block;padding:3px 10px;border-radius:999px;
+         font:11.5px/1.5 -apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif;font-weight:700;
+         border:1px solid var(--line);color:var(--sub);background:var(--shell);white-space:nowrap}
+  .rec-v.good{border-color:#54604d;color:#fff;background:var(--good)}
+  .rec-v.warn{border-color:#7d6a44;color:#fff;background:var(--warn)}
+  .rec-v.bad{border-color:#8e4034;color:#fff;background:var(--bad)}
+  .rec-v.log{border-color:var(--line);color:var(--sub);background:var(--shell)}
+  .rec-v.todo{border-color:#3f5a72;color:#fff;background:#4a6b88}
+  .rec-date{color:var(--dim);font:11px ui-monospace,monospace}
+  .empty-copy{margin:16px 0 0;color:var(--sub);font-size:16px;line-height:1.85}
+  .empty-copy span{color:var(--dim)}
+
+
+  @media(max-width:760px){
+    .section{padding:24px 20px}
+    /* ★狭くても横並びは保つ。詰めるだけ。縦積みは 400px 以下でだけ行う */
+    .funnel{gap:2px}
+    .stage{min-width:0}
+    .stage-name{font-size:12.5px;line-height:1.4}
+    .stage-value{margin-top:5px;font-size:19.5px}
+    .trans{padding-top:16px}
+    .trans-arrow{font-size:14px}
+    .trans-value{font-size:12px}
+    .goal-numbers{grid-template-columns:1fr}
+    .split{grid-template-columns:1fr}
+    .loop-row{grid-template-columns:1fr auto;gap:10px}
+    .loop-num{display:none}
+  }
+
+  @media(max-width:400px){
+    /* ここで初めて縦積み。段階は「名前 … 数字」の1行、間に「↓ 53%」を挟む */
+    .funnel{grid-template-columns:1fr;gap:0}
+    .stage,.stage:first-child,.stage:last-child{
+      display:flex;align-items:baseline;justify-content:space-between;gap:14px;
+      padding:9px 0;text-align:left;border-bottom:1px solid var(--line-soft)}
+    .stage:last-child{border-bottom:0}
+    .stage-name{font-size:15px}
+    .stage-value{margin-top:0;font-size:23px}
+    .trans,.trans:first-child{display:flex;align-items:center;gap:9px;padding:6px 0 6px 4px;text-align:left}
+    .trans-arrow{display:inline-block;transform:rotate(90deg);font-size:15px}
+    .trans-value{margin-top:0;font-size:12.5px}
+  }
+
+  /* RECORD: 1施策1項目。評価日と比較根拠を一緒に読む */
+  .record-set{margin-top:16px;min-width:0}
+  .record-item{padding:22px 0;border-top:1px solid var(--line);font-size:15px;line-height:1.8;overflow-wrap:anywhere}
+  .record-item:first-of-type{border-top:0;padding-top:0}
+  .record-top{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
+  .record-top h3{margin:0;font-size:20px;font-weight:700;line-height:1.6;color:var(--ink);flex:1 1 260px}
+  .record-item p{margin:10px 0;color:var(--sub)}
+  .record-item .record-meta{font-size:13px;color:var(--sub)}
+  .record-item .record-assessment{font-size:16px;font-weight:700;color:var(--ink)}
+  .record-comment{margin-top:4px}
+  /*=== 出来事のLOG。file:// では fetch が CORS で弾かれるので iframe で読む。
+       .md はブラウザがそのままテキストで出す（＝装飾なし）。
+       ⚠️ 高さの自動調整は file:// だと script が入れないので固定・中でスクロール ===*/
+  .record-log{margin-top:18px;border-top:1px solid var(--line-soft);padding-top:14px}
+  .record-log > summary{cursor:pointer;color:var(--ink);font-size:14px;list-style:none;
+    display:flex;align-items:center;gap:8px}
+  .record-log > summary::-webkit-details-marker{display:none}
+  .record-log > summary::before{content:"\25B8";color:var(--dim);font:11px ui-monospace,monospace}
+  .record-log[open] > summary::before{content:"\25BE"}
+  .record-log > summary span{text-decoration:underline;text-underline-offset:3px}
+  .record-log > summary a{margin-left:auto;color:var(--dim);font-size:12.5px;text-decoration:none}
+  .record-log > summary a:hover{color:var(--ink);text-decoration:underline}
+  .record-log iframe{display:block;width:100%;height:340px;margin-top:12px;
+    border:1px solid var(--line-soft);background:var(--surface)}
+  /*=== 施策の評価の図。CSSの棒だけで描く（幅が変わっても崩れず、再描画の配線が要らない）===*/
+  .record-viz{margin:14px 0 0;padding:14px 16px;border:1px solid var(--line-soft);background:var(--surface-2)}
+  .rv-title{color:var(--dim);font:700 11.5px ui-monospace,monospace;letter-spacing:.08em}
+  .rv-title em{font-style:normal;color:var(--warn);margin-left:9px;letter-spacing:0}
+  .rv-bars{display:flex;align-items:flex-end;gap:5px;height:74px;margin-top:14px}
+  .rv-col{flex:1 1 0;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%}
+  .rv-col i{display:block;width:100%;min-height:2px;background:#a8b79a}
+  .rv-col.on i{background:var(--good)}
+  .rv-col.alt i{background:repeating-linear-gradient(45deg,#7d6a44,#7d6a44 3px,#c9b78e 3px,#c9b78e 6px)}
+  .rv-col b{font:600 12px ui-monospace,monospace;color:var(--ink);margin-bottom:4px}
+  .rv-labels{display:flex;gap:5px;margin-top:6px}
+  .rv-labels span{flex:1 1 0;text-align:center;color:var(--dim);font:11px ui-monospace,monospace;white-space:nowrap}
+  .rv-labels span.on{color:var(--warn);font-weight:700}
+  .rv-h{margin-top:13px;display:grid;grid-template-columns:auto 1fr auto;gap:7px 11px;align-items:center}
+  .rv-h .k{color:var(--sub);font-size:13px;white-space:nowrap}
+  .rv-h .t{height:13px;background:#e4e9dc}
+  .rv-h .t i{display:block;height:100%;background:var(--good)}
+  .rv-h .t i.dim{background:#a8b79a}
+  .rv-h .v{font:600 13px ui-monospace,monospace;color:var(--ink);white-space:nowrap}
+  .rv-foot{margin-top:11px;color:var(--sub);font-size:13px;line-height:1.7}
+  .rv-foot b{color:var(--ink);font:600 14px ui-monospace,monospace}
+  /*=== 現在の評価。図より前に置き、根拠を後ろに続ける。
+       点数は「狙いに対してどれだけ達成したか」の10点満点。判定できないものは — ===*/
+  .record-verdict{margin:12px 0 0;display:grid;grid-template-columns:126px 1fr;
+    background:var(--surface-2)}
+  /*=== A〜E と - の5段階。濃い地に白抜きで、ここが最初に目に入るようにする。
+       段階の意味を下に1語で添えるので、凡例を別に置かなくてよい。
+       色は A（緑）→ E（赤）へ寄せ、明るさは揃える。未評価だけ薄い地＋濃い字にして、
+       「まだ評価が付いていない」ことを色で分ける ===*/
+  .rvd-score{display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:16px 8px;background:var(--warn);color:#fff}
+  .rvd-score.g-a{background:#4a6b1c}
+  .rvd-score.g-b{background:#6b8536}
+  .rvd-score.g-c{background:#9b6518}
+  .rvd-score.g-d{background:#a9522c}
+  .rvd-score.g-e{background:#a8443a}
+  .rvd-score.g-none{background:#e6eae2;color:var(--dim)}
+  .rvd-score.g-none i{opacity:1}
+  .rvd-score b{font:600 46px/1 ui-monospace,monospace;letter-spacing:-.02em}
+  .rvd-score i{margin-top:7px;font:700 12px/1.4 -apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif;
+    font-style:normal;opacity:.82;white-space:nowrap}
+  .rvd-body{padding:16px 18px;min-width:0}
+  .rvd-k{display:block;margin-bottom:6px;color:var(--dim);
+    font:700 11px ui-monospace,monospace;letter-spacing:.1em}
+  .rvd-body p{margin:0;font-size:17px;font-weight:700;color:var(--ink);line-height:1.7}
+  @media(max-width:600px){
+    .record-verdict{grid-template-columns:96px 1fr}
+    .rvd-score b{font-size:36px} .rvd-score i{font-size:11px}
+    .rvd-body{padding:13px 14px} .rvd-body p{font-size:16px}
+  }
+  /*=== 事前の予想と判定日。★後から数字を見て「効いた」と言えてしまうのを防ぐため、
+       判定の場で手元に無いと困る。トグルに隠さず、評価のすぐ下に出す ===*/
+  .record-forecast{margin:9px 0 0;display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;
+    color:var(--sub);font-size:14px;line-height:1.7}
+  .record-forecast > span{padding:2px 9px;border-radius:999px;border:1px solid var(--line);
+    background:var(--shell);color:var(--dim);font:700 11px ui-monospace,monospace;letter-spacing:.08em}
+  .record-forecast.none{color:var(--dim)}
+  .record-forecast em{font-style:normal;color:var(--dim);font-size:13px}
+  .record-warn{margin:7px 0 0;color:var(--warn);font-size:13.5px;line-height:1.75}
+  @media(max-width:600px){ .rv-col b{font-size:10.5px} .rv-labels span{font-size:9.5px} }
+  .lede{margin:0;font-size:16.5px;font-weight:700;color:var(--ink);line-height:1.7}
+  .sub-lede{margin:5px 0 0;color:var(--sub);font-size:14px;line-height:1.8}
+  .fold{margin-top:10px;color:var(--sub);font-size:13px;line-height:1.75}
+  .fold>summary{cursor:pointer;color:var(--dim);font-size:12.5px;list-style:none;
+    display:inline-flex;align-items:center;gap:6px}
+  .fold>summary::-webkit-details-marker{display:none}
+  .fold>summary::before{content:"\25B8";color:var(--dim);font:11px ui-monospace,monospace}
+  .fold[open]>summary::before{content:"\25BE"}
+  .fold .fd-b{margin-top:7px;padding-left:2px}
+  .fold b{color:var(--ink);font-weight:600}
+  /*=== 日ごとの数列は文章に埋めず、そろえた表にする ===*/
+  .dtbl{margin-top:8px;display:grid;grid-template-columns:auto repeat(3,1fr);
+    gap:2px 12px;font:12.5px ui-monospace,monospace;color:var(--sub)}
+  .dtbl span{white-space:nowrap;text-align:right}
+  .dtbl span:nth-child(4n+1){text-align:left}
+  .dtbl .hd{color:var(--dim);font-size:11px}
+  .open-item .why{display:block;margin-top:3px;color:var(--dim);
+    font-size:12.5px;line-height:1.6;font-weight:400}
+  .whale .wh-l{margin:6px 0 0;color:var(--ink);font-size:14px;font-weight:600}
+  .whale p{margin:3px 0 0}
+
+  /* ── 分割版（殻 index.html ＋ ループ頁 LXX.html）で足したぶん ──
+       単一ファイルのときは無かった規則。ここから下だけが 1.3.0 の追加 */
+  /* 殻のループ表示枠。縦いっぱい・中スクロール。ループを開いているあいだは
+     body の余白を外して、枠を画面いっぱいに使う（右ペインぶんだけ空ける） */
+  #loop-frame{display:none;width:100%;height:calc(100vh - 0px);border:0;background:var(--shell)}
+  body.in-loop{padding:0}
+  body.in-loop.pane-on{padding-right:var(--pane)}
+  body.in-loop .page{display:none}
+  body.in-loop #loop-frame{display:block}
+  /* ループ頁を単体で開いたときの断り書き（殻から開いていれば出ない） */
+  .standalone-note{max-width:880px;margin:0 auto 14px;padding:10px 13px;border-radius:9px;
+    border:1px solid var(--line);background:var(--surface-3);color:var(--sub);font-size:13.5px}
+  .standalone-note a{color:#52751f;font-weight:700}

@@ -3,6 +3,15 @@
 更新したら `install.sh` がこのファイルの**先頭の項**を表示します。
 **「移行が必要」** と書かれた版は、既存プロジェクトの `loops/` に手が要ります。次に `/rising-loop` を使ったときにスキルが提案します。
 
+## 1.3.0 — 2026-09-17 ★ 移行が必要
+
+- **画面を分けた。`loops/index.html` 1枚 → 殻（`index.html`）＋ ループ頁（`LXX.html`）＋ 共通ファイル（`rising.css` `rising.js`）。** 殻は一覧・右ペイン・使い方・モーダル・トーストと `<iframe id="loop-frame">` を持ち、ループの中身は各頁が持つ。`file://` で開けること、画面を切り替えても右ペインが切れないことは変わらない。**「このループを合わせて」でスキルが移行を提案する**（`assets/split-index.py`。元の `index.html` は `loops/.tmp/index-before-split.html` に退避）
+- **数字の更新で、ループごとの子が `LXX.html` を直接書くようになった。** 断片の切り出しと差し戻しが要らなくなり、`assets/splice-section.py` は廃止
+- **`assets/template.html` を廃止した。** 殻の雛形 `assets/index.html` と、ループ頁の雛形 `assets/loop.html` の2つに分けた。画面を作るときは、この2つと共通ファイル（`rising.css` `rising.js`）をコピーする
+- **「このループを合わせて」は、共通ファイルを上書きして殻を入れ替えるだけになった。** `rising.css` `rising.js` `chat-pane.sh` は `assets/` のものをそのままコピー、殻は `assets/shell-update.py`（CONST と LOOPS ブロックだけを引き継ぎ、共通ファイル3つも同時に上書きする）。**ループ頁は触らない**（頁の `data-page-schema` が上がった版だけ、その版の手順で直す）
+- install.sh: 別の場所に古い rising-loop（旧名 `loop-manager` を含む）が残っていると、削除するよう案内する
+- 対象を macOS と明記。Windows は WSL の中で使う（install.sh は PowerShell では止まる）
+
 ## 1.2.8 — 2026-09-17
 
 - **数字の更新を速くした**（6ループで 31分 → 6〜7分の見込み）。親が数字取りを1回だけ実行して配り、ループごとの子を1メッセージで同時に起動。子は md と画面の断片（`loops/.tmp/s-LXX.html`）だけを直し、親が `assets/splice-section.py` で index.html に差し戻す。子にスキル本文を読ませない

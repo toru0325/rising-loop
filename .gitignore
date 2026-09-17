@@ -1,3 +1,4 @@
 .DS_Store
 _design/
 assets/img/
+__pycache__/

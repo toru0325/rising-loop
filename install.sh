@@ -19,6 +19,12 @@ BRANCH="main"
 DEST="${HOME}/.claude/skills/rising-loop"
 TGZ_URL="https://github.com/${REPO}/archive/refs/heads/${BRANCH}.tar.gz"
 
+# macOS 用。Windows は WSL の中で（PowerShell では動かない）
+case "$(uname -s 2>/dev/null)" in
+  Darwin|Linux) ;;
+  *) printf 'このスクリプトは macOS 用です。Windows の人は WSL の中で実行してください。\n' >&2; exit 1 ;;
+esac
+
 need() { command -v "$1" >/dev/null 2>&1 || { printf '%s が見つかりません。入れてから再実行してください。\n' "$1" >&2; exit 1; }; }
 need curl; need tar
 
@@ -38,6 +44,24 @@ if [ -d "$DEST" ] || [ -L "$DEST" ]; then
   OLD="$(cat "$DEST/VERSION" 2>/dev/null || printf '1.0.0 より前')"
 fi
 
+# 別の場所に古い rising-loop（zip の頃の名前 loop-manager を含む）が残っていないか。案内だけで削除はしない
+warn_dupes() {
+  found=""
+  for base in "$HOME/.claude/skills" "$PWD/.claude/skills"; do
+    [ -d "$base" ] || continue
+    for d in "$base"/*/; do
+      d="${d%/}"
+      [ "$d" = "$DEST" ] && continue
+      [ -f "$d/SKILL.md" ] || continue
+      if grep -qE '^name: *(rising-loop|loop-manager)' "$d/SKILL.md" 2>/dev/null; then found="$found\n   $d"; fi
+    done
+  done
+  if [ -n "$found" ]; then
+    printf '\n⚠ 別の場所に古い rising-loop があります。/rising-loop が古い方で動くことがあるので、削除してください:%b\n' "$found"
+    printf '   （他の場所に置いた覚えがあれば: find ~ -name SKILL.md -path "*rising-loop*" 2>/dev/null）\n'
+  fi
+}
+
 hint_update() {
   printf '\n── 次にやること ─────────────────────────\n'
   printf '各画面の右ペインのチャットに、この1行を貼って送る:\n\n'
@@ -48,6 +72,7 @@ hint_update() {
 if [ "$OLD" = "$NEW" ]; then
   printf '✔ すでに最新版（%s）です。\n' "$NEW"
   hint_update
+  warn_dupes
   exit 0
 fi
 
@@ -82,3 +107,4 @@ if [ "$OLD" = "(未導入)" ]; then
 else
   hint_update
 fi
+warn_dupes

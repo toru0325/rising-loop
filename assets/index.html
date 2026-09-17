@@ -1,0 +1,243 @@
+<!doctype html>
+<!-- ═══════════════════════════════════════════════════════════════
+     rising-loop の殻（index.html）のテンプレート
+
+     保存するのはこの2か所だけ（共通部品を入れ替えるときも、ここだけ移す）:
+       CONST:BEGIN 〜 CONST:END   PROJECT_DIR / SERVICE_NAME / PANES
+       LOOPS:BEGIN 〜 LOOPS:END   一覧（合算の数字ブロック .rev と行）
+
+     ループの画面は LXX.html（assets/loop.html から作る）。この殻は iframe で出すだけ。
+     CSS と JS は rising.css / rising.js（共通部品。中身を書かない）。
+
+     実物にコピーしたら、この注記を下の2行に差し替えること:
+     「このファイルは loops/*.md と loops/logs/*.md から作られています。
+       直接編集しないでください。md を直して、ここを更新します。」
+
+     詳しくは ../references/HTML生成.md
+     ═══════════════════════════════════════════════════════════════ -->
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<!-- ★<title> は rising.js が SERVICE_NAME から入れ直す -->
+<title>ライジング・ループ</title>
+<link rel="stylesheet" href="rising.css" />
+</head>
+<body>
+
+<!-- ═════════ 定数。★ここは要書き換え ═════════ -->
+<!-- CONST:BEGIN -->
+<script>
+  //=== ⚠️ この CONST と下の LOOPS の中身（サービス名・ループ名・数字）は、
+  //===    形式を見せるための架空例です。構造だけ借りて、必ず実データで置き換えてください。
+  //===    （このブロックは split-index.py / shell-update.py が丸ごと差し替えるので、注記も残りません）
+  //=== ★このプロジェクトの絶対パス（loops/ の親）。右ペインの AI はここを cwd にして動く
+  //===   忘れると別プロジェクトの cwd で動く
+  var PROJECT_DIR = '/絶対パス/プロジェクト';
+  //=== ★サービス名。<title> と一覧の見出しに入る
+  var SERVICE_NAME = '（サービス名）';
+  //=== ★右ペインを立てる画面IDの一覧。ループを足したらここにも足す（右ペイン専用。画面の切り替えは見ない）。
+  //===   セッションIDはここに持たない。loops/chat-pane.sh が loops/.chat-sessions を見る
+  var PANES = ['s-list','s-L01','s-L02'];
+</script>
+<!-- CONST:END -->
+
+<div class="page">
+<!-- LOOPS:BEGIN -->
+<!-- ═════════ 一覧 ═════════ -->
+<section class="screen" id="s-list">
+  <div class="flow">
+    <div class="section">
+      <div class="kicker">RISING LOOP</div>
+      <div class="section-head" style="margin-top:7px">
+        <h1 class="goal-name" style="margin-top:0">（サービス名）ライジング・ループ</h1>
+        <div class="head-right">
+          <button class="upd" data-upd="all">全ループ更新</button>
+          <button class="cmt" data-sec="ループ一覧" data-loop="ループ一覧">コメント</button>
+        </div>
+      </div>
+      <!--=== 複数ループを合成した数字を置く場所。無いプロジェクトはこのブロックごと消す ===-->
+      <div class="rev">
+        <div class="rev-total">累計売上 <b>2,313円</b></div>
+        <div class="rev-break">有料チケット 1,750円（7件 × 250円） ＋ 広告 563円</div>
+        <div class="rev-note">券は9/7まで・広告は9/6まで（配信レポートが手作業のため）・手数料を引く前</div>
+      </div>
+    </div>
+    <div class="section tabbed t-loops">
+      <div class="sec-tab t-loops"><span class="k">LOOPS</span><span class="ja">ループ一覧</span></div>
+      <div class="sec-right"><button class="add-loop">ループを追加</button></div>
+      <!--=== 一覧が0件のときは .loop-list の代わりにこれを出す（文言の正は SKILL.md「毎回やること」の10個。書き換えない）
+      <div class="loop-ideas">
+        <div class="li-head">例えばこんな目標</div>
+        <ul>
+          <li>申し込みを増やしたい</li><li>見込み客を増やしたい</li><li>翌日また来る人を増やしたい</li><li>有料に切り替える人を増やしたい</li><li>解約を減らしたい</li>
+          <li>TOEIC の点を上げたい</li><li>YouTube の登録者を増やしたい</li><li>株の含み益を増やしたい</li><li>体重を落としたい</li><li>貯金を毎月積みたい</li>
+        </ul>
+        <p>右上の「ループを追加」から送ると、AI が目標の数字と窓を聞いて作ります。</p>
+      </div>
+      ===-->
+      <div class="loop-list">
+        <button class="loop-row" data-go="s-L01">
+          <div>
+            <div class="loop-name"><span class="lid-pill">L01</span>有料チケットの売上を、月 15,000円 に</div>
+            <div class="loop-sub">鍵をタップする人は増えているのに、買う人が増えていない<br>施策評価：購入は発生。ボタン単独の効果は評価待ち。</div>
+          </div>
+          <div class="loop-num"><b>1,750</b> / 15,000円<div class="loop-bar"><i style="width:12%"></i></div></div>
+          <div class="state"><div class="st run"><span class="st-dot"></span><span class="st-n">2</span><span class="st-lb">実行中</span></div><div class="st rev"><span class="st-dot"></span><span class="st-n">1</span><span class="st-lb">評価中</span></div></div>
+          <div class="chev">→</div>
+        </button>
+
+        <button class="loop-row" data-go="s-L02">
+          <div>
+            <div class="loop-name"><span class="lid-pill">L02</span>来た人が、次の日もまた来る割合を 30% に</div>
+            <div class="loop-sub">初日ごとの振れが極端（18/4/7/19/14%）。翌日が揃った3日なら14%</div>
+          </div>
+          <div class="loop-num"><b>11</b> / 30%<div class="loop-bar"><i style="width:37%"></i></div></div>
+          <div class="state"><div class="st idle"><span class="st-dot"></span>施策待ち</div></div>
+          <div class="chev">→</div>
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- LOOPS:END -->
+</div>
+
+<!-- ループの画面はここに出る（LXX.html）。★src は書かない。
+     rising.js が contentWindow.location.replace で差し替える（履歴は殻の hash だけに一本化） -->
+<iframe id="loop-frame" title="ループの画面"></iframe>
+
+<div id="modal" role="dialog" aria-modal="true">
+  <div class="m-panel">
+    <div class="m-kick">COMMENT</div>
+    <h3 class="m-title" id="m-title">ボトルネックについて</h3>
+    <div class="m-sub" id="m-sub"></div>
+    <textarea class="m-input" id="m-input"></textarea>
+    <div class="m-chips" id="m-chips" hidden></div>
+    <div class="m-actions">
+      <button class="button button-secondary" id="m-cancel">キャンセル</button>
+      <button class="button button-primary" id="m-ok">コピーする</button>
+    </div>
+    <div class="m-hint">⌘/Ctrl + Enter でも確定します</div>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite">
+  <div class="t-head">COPIED</div>
+  <div class="t-body" id="toast-body"></div>
+  <div class="t-foot"><span class="arrow">▶</span><span class="t-foot-text">AIに貼って伝えてください。</span></div>
+</div>
+<!-- ═════════ Claude Code / codex の右ペイン ═════════
+     起動（どちらか一方。どちらを立てるかで道具が決まる。同じ 7681 番なので両方は立てない）:
+       Claude Code: sh /絶対パス/プロジェクト/loops/chat-pane.sh claude
+       codex:       sh /絶対パス/プロジェクト/loops/chat-pane.sh codex
+           （?arg=<プロジェクトの絶対パス>&arg=<画面ID> の2つが chat-pane.sh に渡る。
+             セッションIDは画面が持たない。ランチャーが loops/.chat-sessions を見て、
+             無ければその場で作る。ttyd は全プロジェクトで1本を共有）
+     見えるだけ（file:// からは iframe の中へ送れない）。真っ黒なときの出し方は #cc-help に出す -->
+<div id="cc">
+  <div class="cc-bar">
+    <button class="cc-ask" id="cc-ask">💡 15秒たってもチャットが出ない？</button>
+  </div>
+  <div class="cc-stack"></div>
+</div>
+<div id="topbtns"><button id="howto-btn">? 使い方</button><button id="cc-toggle">AI ◂</button></div>
+
+<!-- この画面の使い方。★仕組みは3つだけ: 見るだけの画面／指示文をコピーするボタン／貼ると AI が画面を書き換える -->
+<div id="howto" role="dialog" aria-modal="true" aria-labelledby="howto-t">
+  <div class="h-panel">
+    <h3 id="howto-t"><span>ライジング・ループの使い方</span><span class="brand"><b>RISING LOOP</b><i><span class="ver">v1.3.0</span> · Created by Voice App Lab</i></span></h3>
+    <p class="lede">ライジング・ループは、ひとつの指標を計測し、その数字を上げるためのあらゆる施策を AI と共に進めるループシステムです。</p>
+    <p class="lede">この画面は<b>見るだけ</b>です。ボタンを押しても何も実行されません。<b>指示文を作ってコピーする</b>だけ。それを<b>右のチャットに貼る</b>と AI が動き、この画面を書き換えます。</p>
+    <div class="cols">
+      <svg class="howto-fig" viewBox="0 0 260 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ゴール → 数字を測る → ボトルネック → 施策案から1つ選ぶ → 施策 → 期間をおいて測る → 評価 → 数字が動く → ゴールへ戻る。回すたびにゴールに近づく">
+        <defs><marker id="hw-ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#52751f"/></marker></defs>
+        <g font-family="-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif">
+          <!-- 1. ゴール（着地点。濃い色） -->
+          <rect x="70" y="10" width="150" height="60" rx="10" fill="#1c2821"/>
+          <text x="78" y="22" font-size="8" font-weight="700" fill="#8fa86a" letter-spacing=".12em" font-family="ui-monospace,monospace">GOAL</text>
+          <text x="145" y="38" text-anchor="middle" font-size="15" font-weight="700" fill="#ccef67">ゴール</text>
+          <text x="145" y="56" text-anchor="middle" font-size="11.5" fill="#dfe6d6">動かしたい数字</text>
+          <path d="M145 72 L145 104" stroke="#52751f" stroke-width="2.5" marker-end="url(#hw-ah)"/>
+          <text x="153" y="82" font-size="11" fill="#52751f">数字を測る。</text>
+          <text x="153" y="96" font-size="11" fill="#52751f">届いていない</text>
+          <!-- 2. ボトルネック -->
+          <rect x="70" y="108" width="150" height="60" rx="10" fill="#f4f6f0" stroke="#c9d3bd"/>
+          <text x="78" y="120" font-size="8" font-weight="700" fill="#8fa86a" letter-spacing=".12em" font-family="ui-monospace,monospace">BOTTLENECK</text>
+          <text x="145" y="136" text-anchor="middle" font-size="15" font-weight="700" fill="#1c2821">ボトルネック</text>
+          <text x="145" y="154" text-anchor="middle" font-size="11.5" fill="#5a6a5f">届かない理由</text>
+          <path d="M145 170 L145 202" stroke="#52751f" stroke-width="2.5" marker-end="url(#hw-ah)"/>
+          <text x="153" y="180" font-size="11" fill="#52751f">施策案から</text>
+          <text x="153" y="194" font-size="11" fill="#52751f">1つ選ぶ</text>
+          <!-- 3. 施策 -->
+          <rect x="70" y="206" width="150" height="60" rx="10" fill="#f4f6f0" stroke="#c9d3bd"/>
+          <text x="78" y="218" font-size="8" font-weight="700" fill="#8fa86a" letter-spacing=".12em" font-family="ui-monospace,monospace">TRIAL</text>
+          <text x="145" y="234" text-anchor="middle" font-size="15" font-weight="700" fill="#1c2821">施策の実行</text>
+          <text x="145" y="252" text-anchor="middle" font-size="11.5" fill="#5a6a5f">打ち手を実行</text>
+          <path d="M145 268 L145 300" stroke="#52751f" stroke-width="2.5" marker-end="url(#hw-ah)"/>
+          <text x="153" y="278" font-size="11" fill="#52751f">期間をおいて</text>
+          <text x="153" y="292" font-size="11" fill="#52751f">測る</text>
+          <!-- 4. 評価 -->
+          <rect x="70" y="304" width="150" height="60" rx="10" fill="#f4f6f0" stroke="#c9d3bd"/>
+          <text x="78" y="316" font-size="8" font-weight="700" fill="#8fa86a" letter-spacing=".12em" font-family="ui-monospace,monospace">RECORD</text>
+          <text x="145" y="332" text-anchor="middle" font-size="15" font-weight="700" fill="#1c2821">施策の評価</text>
+          <text x="145" y="350" text-anchor="middle" font-size="11.5" fill="#5a6a5f">効いたか A〜E</text>
+          <path d="M145 366 L145 392" stroke="#52751f" stroke-width="2.5"/>
+          <text x="153" y="380" font-size="11" fill="#52751f">数字が動く</text>
+          <!-- 戻り: 下から左を通ってゴールへ -->
+          <path d="M145 392 L36 392 L36 38 L66 38" fill="none" stroke="#52751f" stroke-width="2.5" marker-end="url(#hw-ah)"/>
+          <text x="22" y="215" text-anchor="middle" font-size="11.5" font-weight="700" fill="#52751f" style="writing-mode:vertical-rl;text-orientation:upright" letter-spacing="1">回すたびにゴールに近づく</text>
+        </g>
+      </svg>
+      <div>
+    
+    <ol class="steps">
+      <li><div><b>施策を始めるには</b>、やりたい施策の「📋 指示する」を押して<b>「TRIAL に移す」</b>を選び、コピー。右のチャットに貼って Enter。実装が全部 ✅ になったら、同じ「指示する」から<b>「完了にして（評価に移す）」</b></div></li>
+      <li><div><b>ボタンはぜんぶ指示文を作るだけ。</b>コメント・更新・指示、どれも右のチャットに貼って初めて動きます</div></li>
+      <li><div><b>ループの期間を決めて</b>（1日1回、週1回、など）、都度「更新」を押して AI に指示。全体のステータスが更新されるので、次の施策に進みます</div></li>
+    </ol>
+    <div class="free">
+      <b>右のチャットはただの Claude Code（Codex）です。普段どおりに使いましょう</b>
+      <ul>
+        <li>（スクショを貼って）「ここをグラフにして」「この説明は短く」</li>
+        <li>「気づいたことを GOAL の下にメモとして入れて」</li>
+        <li>「施策案が弱い。別案で5案だして」</li>
+        <li>「施策のプランを別 md ファイルにまとめてから実装して」</li>
+        <li>「GA4 の API から数字取って」「Google Drive に保存して」</li>
+      </ul>
+      などなど。画面を「母艦」にして、API をつなげたり、作業を進行すると良い感じになります。
+    </div>
+      </div>
+    </div>
+    <div class="h-actions">
+      <span class="h-note">右上の「? 使い方」でいつでも開けます</span>
+      <button class="button button-primary" id="howto-close">わかった</button>
+    </div>
+  </div>
+</div>
+
+<!-- 真っ黒なときの説明。コマンドは Claude Code と codex の2つから選ぶ（どちらも同じ 7681 番） -->
+<div id="cc-help" role="dialog" aria-modal="true" aria-labelledby="cc-help-t">
+  <div class="h-panel">
+    <h3 id="cc-help-t">15秒たってもチャットが出ない？</h3>
+    <p>右のチャットは、ターミナルで動いている Claude Code（または codex）を映しているだけです。動いていないと真っ黒になります。</p>
+    <div class="h-step">① 使う方をターミナルに貼って実行</div>
+    <div class="h-who">Claude Code を使う人</div>
+    <!-- コマンドは JS が CONST の PROJECT_DIR から埋める（data-cmd が claude / codex の別） -->
+    <button class="h-cmd" data-cmd="claude" data-foot="ターミナルに貼って実行してください。">
+      <code></code>
+    </button>
+    <div class="h-who">codex を使う人</div>
+    <button class="h-cmd" data-cmd="codex" data-foot="ターミナルに貼って実行してください。">
+      <code></code>
+    </button>
+    <div class="h-step">② このページをリロード</div>
+    <p>出るまで15秒ほどかかることがあります。</p>
+    <div class="h-actions"><button class="button button-secondary" id="cc-help-close">閉じる</button></div>
+  </div>
+</div>
+
+<script src="rising.js"></script>
+
+</body>
+</html>

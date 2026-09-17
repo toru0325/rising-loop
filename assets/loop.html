@@ -1,0 +1,183 @@
+<!doctype html>
+<!-- ═══════════════════════════════════════════════════════════════
+     rising-loop のループ頁（LXX.html）のテンプレート
+
+     この頁は殻（index.html）の <iframe id="loop-frame"> の中に出ます。
+     モーダル・トースト・右ペインは持ちません。ボタンは押された事実を
+     postMessage で殻に渡すだけ（rising.js のループ頁側）。
+
+     data-page-schema は**構造の連番**（スキルの版とは別物）。
+     構造が変わる版だけ、CHANGELOG の移行手順に従って直します。
+
+     詳しくは ../references/HTML生成.md
+     ═══════════════════════════════════════════════════════════════ -->
+<html lang="ja" data-page-schema="1">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>rising-loop のループ頁</title>
+<link rel="stylesheet" href="rising.css" />
+<!-- ファネル図と計測グラフに使う。UMD 版を src で読む（file:// では module も fetch も使えない） -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+</head>
+<body>
+<div class="page">
+<section class="screen" id="s-L01">
+  <button class="back" data-go="s-list"><span class="arw">←</span> ループ一覧</button>
+  <div class="flow">
+    <div class="section tabbed t-goal">
+      <div class="sec-tab t-goal"><span class="k">GOAL</span><span class="ja">ゴール</span><span class="lid">· L01</span></div>
+      <div class="sec-right"><button class="upd" data-upd="L01">更新</button><button class="cmt" data-id="L01" data-sec="ゴール" data-loop="有料チケットの売上を、月15,000円に">コメント</button></div>
+      <h1 class="goal-name">有料チケットの売上を、月 15,000円 に</h1>
+      <div class="goal-numbers">
+        <div class="number-block"><div class="number-label" data-goal-when="L01">いま</div><div class="number"><span data-goal-now="L01">1,750</span><small> 円</small></div><div class="number-money" data-goal-money="L01">7件</div></div>
+        <div class="progress-wrap">
+          <div class="progress-track"><div class="progress-fill" data-goal-fill="L01" style="width:12%"></div></div>
+          <div class="progress-meta"><span>はじめた頃 0円</span><span data-goal-diff="L01">—</span></div>
+        </div>
+        <div class="number-block" style="text-align:right"><div class="number-label">目標</div><div class="number">15,000<small> 円</small></div><div class="number-money">60件</div></div>
+      </div>
+      <div class="hist" data-hist="L01">
+        <div class="hist-top">
+          <span class="hist-note"></span>
+        </div>
+        <div class="hist-chart"></div>
+        <div class="hist-report">
+          <div class="hr-title">レポート <span class="hr-when">窓 過去30日（実データは 8/29〜9/7 の10日ぶん・本番のみ）。⚠️ 9/7は集計途中</span></div>
+          <div class="sub-head">数字はここで落ちています</div>
+          <div class="funnel-f" data-funnel="L01"></div>
+          <div class="sub-head" style="margin-top:18px">日ごとに払われた件数</div>
+          <div class="split">
+            <div class="split-col">
+              <div class="split-row"><span>8/29 〜 9/1</span><span>4日とも0</span><b>0件</b></div>
+              <div class="split-row"><span>9/2</span><span>初販売</span><b>1件</b></div>
+              <div class="split-row"><span>9/3</span><span></span><b>2件</b></div>
+            </div>
+            <div class="split-col">
+              <div class="split-row bad"><span>9/7（15時まで）</span><span>鍵を33回タップされて</span><b>0件</b></div>
+              <div class="split-row"><span>リリース後の通算</span><span>7件 × 250円</span><b>1,750円</b></div>
+            </div>
+          </div>
+        </div>
+        <div class="hist-recs"></div>
+      </div>
+      <p class="forecast">10日で1,990人が来て、払ったのは <strong>7件・1,750円</strong>。鍵をタップする人は増えているのに、買う人が増えていません。</p>
+    </div>
+
+    <div class="section tabbed t-bottleneck">
+      <div class="sec-tab t-bottleneck"><span class="k">BOTTLENECK</span><span class="ja">ボトルネック</span></div>
+      <div class="sec-right"><button class="cmt" data-id="L01" data-sec="ボトルネック" data-loop="有料チケットの売上を、月15,000円に">コメント</button></div>
+
+      <div class="story">
+        無料で足りてしまう → 払う理由が立っていない → 鍵は見にくるが買わない。<br>
+        ⚠️ 逆に振れる可能性もある。試させた結果、期待ほど面白くなくて離れる。
+      </div>
+
+      <div class="sub-head">施策案</div>
+      <div class="open-list"><div class="open-item"><span class="idea-pill"><span class="bulb">💡</span>施策 1</span><div>課金モーダルで、1枚で有料5本すべてが24時間遊べることを見せる（過去30日で、鍵をタップした316人のうち払ったのは7件）</div><button class="do" data-id="L01" data-loop="有料チケットの売上を、月15,000円に" data-no="1" data-text="課金モーダルで、1枚で有料5本すべてが24時間遊べることを見せる">指示する</button></div><div class="open-item"><span class="idea-pill"><span class="bulb">💡</span>施策 2</span><div>値段と期間の組み合わせを試して比べる（250円／24時間しか出していない）</div><button class="do" data-id="L01" data-loop="有料チケットの売上を、月15,000円に" data-no="2" data-text="値段と期間の組み合わせを試して比べる">指示する</button></div></div>
+    </div>
+
+    <div class="section tabbed t-trial">
+      <div class="sec-tab t-trial"><span class="k">TRIAL</span><span class="ja">施策の実行</span></div>
+      <div class="sec-right"><button class="cmt" data-id="L01" data-sec="施策の実行" data-loop="有料チケットの売上を、月15,000円に">コメント</button></div>
+      <!-- trials の件数ぶん .trial を並べる。RECORD にある施策はここに置かない（同じ施策は片方だけ） -->
+      <div class="trial">
+        <div class="trial-top">
+          <div class="trial-name">買わなかった人にだけ、翌日もう一度だけ見せる</div>
+          <div class="head-right"><button class="ins" data-id="L01" data-loop="有料チケットの売上を、月15,000円に" data-text="買わなかった人にだけ、翌日もう一度だけ見せる">指示する</button><div class="trial-status">実現方法を決めるところ</div></div>
+        </div>
+        <div class="todo">
+          <ul class="checks">
+            <li>⬜ 1. 実現方法を決める（どこで・いつ・何を見せるか。案を複数出して選ぶ）</li>
+            <li>⬜ 2. 実装する</li>
+            <li>⬜ 3. 検証版で確認 → 本番</li>
+          </ul>
+        </div>
+      </div>
+      <div class="trial">
+        <div class="trial-top">
+          <div class="trial-name">鍵アイコンに「250円で24時間」の値札を出す</div>
+          <div class="head-right"><button class="ins" data-id="L01" data-loop="有料チケットの売上を、月15,000円に" data-text="鍵アイコンに「250円で24時間」の値札を出す">指示する</button><div class="trial-status">全部済み。直しがなければ『完了にして』</div></div>
+        </div>
+        <div class="todo">
+          <ul class="checks">
+            <li>✅ 1. 値札の文言と位置を決めた（鍵の右下・「250円/24h」）</li>
+            <li>✅ 2. 実装して本番へ（9/15）</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="section record-section tabbed t-record">
+      <div class="sec-tab t-record"><span class="k">RECORD</span><span class="ja">施策の評価</span></div>
+      <div class="sec-right"><button class="cmt" data-id="L01" data-sec="施策の評価" data-loop="有料チケットの売上を、月15,000円に">コメント</button></div>
+      <div class="record-set" data-records="L01">
+<article class="record-item" id="record-L01-T01"><div class="record-top"><h3>ゲーム枠の上にロック解除ボタンを置く</h3></div>
+<p class="record-meta">実施 2026-09-02 · 実施済 · 未評価（測れるだけのデータが無い）</p>
+<div class="record-verdict"><div class="rvd-score g-none"><b>-</b><i>未評価</i></div><div class="rvd-body"><span class="rvd-k">現在の評価</span><p><b>ボタン単独の効果は、まだ測れない。</b>入口を見分ける計測を入れたのは 9/7 で、まだ1日ぶんしかない。</p></div></div>
+<p class="record-forecast"><span>予想</span>2週間で 7件 → 10件<em>判定 9/16</em></p>
+<div class="record-viz"><div class="rv-title">日ごとに払われた件数<em>▼ 9/2 実施</em></div><div class="rv-bars"><div class="rv-col "><b>0</b><i style="height:0%"></i></div><div class="rv-col "><b>0</b><i style="height:0%"></i></div><div class="rv-col on"><b>1</b><i style="height:33%"></i></div><div class="rv-col "><b>2</b><i style="height:67%"></i></div><div class="rv-col "><b>0</b><i style="height:0%"></i></div><div class="rv-col alt"><b>3</b><i style="height:100%"></i></div></div><div class="rv-labels"><span class="">8/31</span><span class="">9/1</span><span class="on">9/2</span><span class="">9/3</span><span class="">9/4</span><span class="">9/6</span></div><div class="rv-foot">実施前は <b>0件</b>。実施後の6日で <b>7件・1,750円</b>。斜線の 9/6 は、別の購入入口が入った日。</div></div>
+<p class="record-warn">⚠️ いちばん売れた日は別の入口が入った日で、どちらから買われたかを分けられていない。</p>
+<button class="cmt record-comment" data-id="L01" data-sec="施策の評価「ゲーム枠の上にロック解除ボタンを置く」" data-loop="有料チケットの売上を、月15,000円に">この施策にコメント</button></article>
+<details class="record-log"><summary><span>出来事のLOG</span><a href="logs/L01.md" target="_blank" rel="noopener">別タブで開く ↗</a></summary><iframe src="logs/L01.md" loading="lazy" title="L01 の出来事のLOG"></iframe></details>
+</div></div>
+  </div>
+</section>
+</div>
+
+<!-- このループのグラフのデータ。loops/*.md と loops/logs/*.md から作られています。
+     直接編集しないでください。★ここがこの頁の唯一の「値」 -->
+<script>
+var LOOP_DATA = {
+  //=== GOAL の履歴。棒＝その日の値、線＝計測点。単位はそろえる
+  hist: {
+    unit: "円", target: 15000,
+    //=== 単価。金額の下に枚数を出すのに使う
+    price: 250,
+    //=== 棒＝その日の値、線＝計測点（その窓の値）。単位はそろえる。
+    //===   ⚠️ 途中の日（今日）も入れる。partial:true を立てると薄い色になる。
+    dayUnit: "円",
+    days: [
+      { d:"8/29", v:0 }, { d:"8/30", v:0 }, { d:"8/31", v:0 },
+      { d:"9/1",  v:0 }, { d:"9/2",  v:250 }, { d:"9/3", v:500 },
+      { d:"9/4",  v:0 }, { d:"9/5",  v:250 }, { d:"9/6", v:750 }, { d:"9/7", v:0, partial:true }
+    ],
+    //=== 折れ線。その日に計測していたらいくつだったか（窓の規則をその日に当てた値）
+    line: [
+      { d:"8/29", v:0 }, { d:"8/30", v:0 }, { d:"8/31", v:0 }, { d:"9/1", v:0 }, { d:"9/2", v:250 },
+      { d:"9/3", v:750 }, { d:"9/4", v:750 }, { d:"9/5", v:1000 }, { d:"9/6", v:1750 }, { d:"9/7", v:2000 }
+    ],
+    points: [
+      { at: "2026-09-03", label: "9月3日", value: 750, end: "9/3",
+        note: "8/29〜9/3 の6日で3件",
+        recs: [
+          ["9/2", "🎉 初販売。ロック解除ボタンを本番へ入れた日の夜に1件"],
+          ["8/30", "診断した日。2日で0件"]
+        ] },
+      { at: "2026-09-07", label: "9月7日", value: 1750, end: "9/7",
+        note: "8/29〜9/7 の10日で7件。9/7 は15時まで0件",
+        recs: [
+          ["9/7", "鍵をタップする人は増えているのに買う人が増えていない"],
+          ["9/6", "9/6 に3件売れた。1日あたりの最多"]
+        ] }
+    ],
+    //=== 最新の点のときだけ「この計測のあとに入ったこと」として出る
+    after: []
+  },
+  //=== 「数字はここで落ちています」の横向きファネル。無いループはこの行ごと消す
+  funnel: {
+    note: "帯の中の % は、前の段から通った割合。上下の余白が、ここまでに失った人",
+    stages: [
+      { name: "起動",             value: 1990, unit: "人" },
+      { name: "ホームを見た",     value: 1026, unit: "人" },
+      { name: "鍵をタップ",       value:  316, unit: "人" },
+      { name: "決済シートが出た", value:   35, unit: "件" },
+      { name: "払った",           value:    7, unit: "件" }
+    ]
+  }
+};
+</script>
+<script src="rising.js"></script>
+
+</body>
+</html>
