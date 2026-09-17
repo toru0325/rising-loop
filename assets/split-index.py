@@ -2,8 +2,10 @@
 """単一ファイルの loops/index.html（1.2.x）を、殻＋ループ頁に分ける（1.3.0 への移行）。
 
   python3 split-index.py <loops ディレクトリ> [--dry-run]
+  python3 split-index.py <loops ディレクトリ> --project-css   # 分割済み。退避ファイルから project.css だけ作り直す
 
-出力: <loops>/index.html（殻）、<loops>/LXX.html（ループごと）、<loops>/rising.css、<loops>/rising.js
+出力: <loops>/index.html（殻）、<loops>/LXX.html（ループごと）、<loops>/rising.css、<loops>/rising.js、
+      <loops>/project.css（元の <style> のうち rising.css に無い規則。プロジェクト独自の CSS。「合わせて」で上書きされない）
 元の index.html は <loops>/.tmp/index-before-split.html に退避する。
 
 JS は eval しない。`var LOOP_HIST = { … }` を、文字列とコメントを飛ばしながら
@@ -163,6 +165,44 @@ def loop_data_text(page):
     return page[m.end() - 1:end]
 
 
+def _css_rules(css):
+    """CSS を (セレクタ文字列, 規則全文) の列に。@media などのブロックは中の規則ごとに分けず、ブロック全体を1件として扱う。"""
+    css = re.sub(r'/\*.*?\*/', '', css, flags=re.S)
+    out = []; i = 0; n = len(css)
+    while i < n:
+        j = css.find('{', i)
+        if j < 0: break
+        head = css[i:j].strip()
+        depth = 0; k = j
+        while k < n:
+            if css[k] == '{': depth += 1
+            elif css[k] == '}':
+                depth -= 1
+                if depth == 0: break
+            k += 1
+        out.append((head, css[i:k+1].strip()))
+        i = k + 1
+    return out
+
+def project_css(orig_html, rising_css):
+    """元の index.html の <style> のうち、rising.css に無いセレクタの規則だけを返す（プロジェクト独自の CSS）。"""
+    m = re.search(r'<style>(.*?)</style>', orig_html, re.S)
+    if not m: return ''
+    have = set(h for h, _ in _css_rules(rising_css))
+    keep = []
+    for head, rule in _css_rules(m.group(1)):
+        if head.startswith('@'):
+            # @media 等は、中のセレクタが1つでも rising.css に無ければ丸ごと残す
+            inner = re.search(r'\{(.*)\}\s*$', rule, re.S)
+            inner_heads = [h for h, _ in _css_rules(inner.group(1))] if inner else []
+            if any(h not in have for h in inner_heads): keep.append(rule)
+        elif head not in have:
+            keep.append(rule)
+    if not keep: return ''
+    return ('/* project.css — このプロジェクト独自の CSS。分割時に元の index.html から自動で抜き出したもの。\n'
+            '   rising.css（共通・「合わせて」で上書きされる）には手を入れず、画面固有の見た目はここに書く。 */\n'
+            + '\n'.join(keep) + '\n')
+
 def marker_replace(tpl, name, body):
     """<!-- NAME:BEGIN --> 〜 <!-- NAME:END --> の中身を差し替える"""
     b, e = '<!-- %s:BEGIN -->' % name, '<!-- %s:END -->' % name
@@ -204,7 +244,7 @@ def goal_name(section_html):
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith('-')]
     #=== 知らないフラグを黙って無視しない（--dryrun のつもりが本番で走るのを防ぐ）
-    unknown = [a for a in sys.argv[1:] if a.startswith('-') and a != '--dry-run']
+    unknown = [a for a in sys.argv[1:] if a.startswith('-') and a not in ('--dry-run', '--project-css')]
     if unknown:
         print(__doc__, file=sys.stderr)
         print('知らないフラグです: %s' % ' '.join(unknown), file=sys.stderr)
@@ -217,8 +257,20 @@ def main():
     src_path = os.path.join(loops, 'index.html')
     if not os.path.isfile(src_path):
         sys.exit('%s がありません' % src_path)
+    rising_css = open(os.path.join(ASSETS, 'rising.css'), encoding='utf-8').read()
+    if '--project-css' in sys.argv:
+        #=== 分割済みのプロジェクトで、退避した元の index.html から project.css だけ作り直す（1.3.0 で落としていた分）
+        bak = os.path.join(loops, '.tmp', 'index-before-split.html')
+        if not os.path.isfile(bak):
+            sys.exit('%s がありません（分割時の退避ファイルが要ります）' % bak)
+        pcss = project_css(open(bak, encoding='utf-8').read(), rising_css)
+        n = len(_css_rules(pcss))
+        if dry:
+            print('project.css に入る規則: %d 件（--dry-run のため書いていません）' % n); return
+        open(os.path.join(loops, 'project.css'), 'w', encoding='utf-8').write(pcss)
+        print('書きました: project.css（%d 件の規則）' % n); return
     if os.path.isfile(os.path.join(loops, 'rising.js')):
-        print('すでに分割済みです（%s/rising.js があります）。何もしません。' % loops)
+        print('すでに分割済みです（%s/rising.js があります）。何もしません。project.css だけ作り直すなら --project-css' % loops)
         return
 
     src = open(src_path, encoding='utf-8').read()
@@ -318,8 +370,10 @@ def main():
     for f in ('rising.css', 'rising.js'):
         shutil.copy2(os.path.join(ASSETS, f), os.path.join(loops, f))
 
-    print('\n書きました: index.html（殻）, %s, rising.css, rising.js'
-          % ', '.join('%s.html' % l for l in pages))
+    pcss = project_css(src, rising_css)
+    open(os.path.join(loops, 'project.css'), 'w', encoding='utf-8').write(pcss)
+    print('\n書きました: index.html（殻）, %s, rising.css, rising.js, project.css（独自 CSS %d 件）'
+          % (', '.join('%s.html' % l for l in pages), len(_css_rules(pcss))))
     print('退避: %s' % os.path.join(tmp, 'index-before-split.html'))
 
 

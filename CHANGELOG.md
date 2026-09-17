@@ -3,6 +3,11 @@
 更新したら `install.sh` がこのファイルの**先頭の項**を表示します。
 **「移行が必要」** と書かれた版は、既存プロジェクトの `loops/` に手が要ります。次に `/rising-loop` を使ったときにスキルが提案します。
 
+## 1.3.1 — 2026-09-18 ★ 移行が必要（1.3.0 で分割した人）
+
+- **1.3.0 の分割で、プロジェクト独自の CSS を落としていた**（プレイルームで表が縦一列に崩れた）。分割は元の `<style>` のうち `rising.css` に無い規則を `loops/project.css` に移すようにし、殻と頁は `rising.css` の後に `project.css` を読む。「合わせて」は `project.css` に触らない
+- 1.3.0 で分割済みの人は「このループを合わせて」で `split-index.py --project-css` を提案する（退避ファイルから作り直す）
+
 ## 1.3.0 — 2026-09-17 ★ 移行が必要
 
 - **画面を分けた。`loops/index.html` 1枚 → 殻（`index.html`）＋ ループ頁（`LXX.html`）＋ 共通ファイル（`rising.css` `rising.js`）。** 殻は一覧・右ペイン・使い方・モーダル・トーストと `<iframe id="loop-frame">` を持ち、ループの中身は各頁が持つ。`file://` で開けること、画面を切り替えても右ペインが切れないことは変わらない。**「このループを合わせて」でスキルが移行を提案する**（`assets/split-index.py`。元の `index.html` は `loops/.tmp/index-before-split.html` に退避）

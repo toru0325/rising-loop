@@ -113,6 +113,7 @@ grep -l 'var SESS' loops/index.html; ls loops/chat-pane.sh; ls loops/rising.js
   2. TRIAL と RECORD の両方にある施策は、**1件ずつ「完了にしますか」と聞く**。はい → RECORD を残して TRIAL から外す（旧 RECORD がある＝本番投入済みなので、plan の ⬜ は無視してよい。予想が無ければ「未記録」）／いいえ → RECORD の項目を消して TRIAL に戻す（旧 RECORD にあった予想・判定日は LOG に退避して捨てない）。**勝手にどちらかに寄せない**（原理3）
   3. 画面の TRIAL を `trials` の件数ぶん `.trial` ブロックに（`references/HTML生成.md`）
   4. md に `summary:` が無ければ、一覧の `.loop-sub` の文を写して足す（1.2.8 から一覧はこれを写す）
+- **1.3.0 で分割済みだが `loops/project.css` が無い**（1.3.0 の分割は独自 CSS を落としていた）→ `python3 ~/.claude/skills/rising-loop/assets/split-index.py loops/ --project-css --dry-run` で件数を見せ、「はい」で `--dry-run` なしを実行（退避ファイル `loops/.tmp/index-before-split.html` から作る）。殻と頁に `<link rel="stylesheet" href="project.css" />` が無ければ `shell-update.py` で殻を入れ替え、頁は `rising.css` の link の次の行に足す
 - 今後も互換を壊す変更は `CHANGELOG.md` に **移行が必要** と書き、この節に手順を足す
 
 ### 毎回やること
