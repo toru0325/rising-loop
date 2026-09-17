@@ -26,7 +26,7 @@ curl -fsSL https://raw.githubusercontent.com/toru0325/rising-loop/main/install.s
 各画面の右ペインのチャットに、この1行を貼って送ってください。
 
 ```
-rising-loop が X.Y.Z になったので、現行ループを合わせて
+rising-loop が X.Y.Z になったので、このループを合わせて
 ```
 
 ## 以前 zip で入れた方へ
