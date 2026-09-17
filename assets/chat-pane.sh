@@ -94,7 +94,9 @@ if [ "${1-}" = "--open" ]; then
   #   （別モデルで動いていた時期があるセッションは、これが無いと毎回そのモデルに戻る）
   MODEL=$(sed -n 's/^[[:space:]]*"model"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$HOME/.claude/settings.json" 2>/dev/null | head -1)
   case "$AI" in
-    claude) if [ -n "$MODEL" ]; then exec "$BIN" --resume "$ID" --model "$MODEL"; else exec "$BIN" --resume "$ID"; fi ;;
+    # ★--autocompact 200000: 文脈が20万トークンを超えたら自動で要約する（既定は約97万）。
+    #   ペインは長く生きるので、放っておくと60万を超えて1ターン20秒かかる。要約後は6〜8万に戻る
+    claude) if [ -n "$MODEL" ]; then exec "$BIN" --resume "$ID" --model "$MODEL" --autocompact 200000; else exec "$BIN" --resume "$ID" --autocompact 200000; fi ;;
     codex)  exec "$BIN" resume "$ID" ;;
     *)      hold "知らない AI です: $AI" ;;
   esac
