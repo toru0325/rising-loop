@@ -58,7 +58,7 @@ command -v codex   #=== codex で使うなら（任意。無くても止めな�
   次に触る人が「入れ忘れた」と誤解しないようにする
 - ★ **ttyd の起動はユーザーのターミナルで。AI は起動コマンドを見せるだけで、自分で起動しない**（Claude Code の中から起動すると会話が保存されなくなる。理由は `references/HTML生成.md`）
 
-**`loops/` を作るときの画面の作り方**: 殻は `assets/index.html`、ループ頁は `assets/loop.html` から作り、`rising.css` `rising.js` は `loops/` にそのままコピーする。殻の CONST ブロック（`PROJECT_DIR` `SERVICE_NAME` `PANES`）を埋める。詳しくは `references/HTML生成.md`。
+**`loops/` を作るときの画面の作り方**: 殻は `assets/index.html`、ループ頁は `assets/loop.html` から作り、`rising.css` `rising.js` は `loops/` にそのままコピーする。殻の CONST ブロック（`PROJECT_DIR` `SERVICE_NAME` `PANES`）を埋める。**タイトル下の主要な数字（`.rev`）は必ず置く**。何を置くかは `references/HTML生成.md`「主要な数字」の決め方で AI が候補を1つ出し、確認を取ってから。詳しくは `references/HTML生成.md`。
 
 ### ★ 作り終えたら、開ける URL を渡して、そこから始めてもらう
 
@@ -126,6 +126,7 @@ grep -l 'var SESS' loops/index.html; ls loops/chat-pane.sh; ls loops/rising.js
   3. 画面の TRIAL を `trials` の件数ぶん `.trial` ブロックに（`references/HTML生成.md`）
   4. md に `summary:` が無ければ、一覧の `.loop-sub` の文を写して足す（1.2.8 から一覧はこれを写す）
 - **1.3.0 で分割済みだが `loops/project.css` が無い**（1.3.0 の分割は独自 CSS を落としていた）→ `python3 ~/.claude/skills/rising-loop/assets/split-index.py loops/ --project-css --dry-run` で件数を見せ、「はい」で `--dry-run` なしを実行（退避ファイル `loops/.tmp/index-before-split.html` から作る）。殻と頁に `<link rel="stylesheet" href="project.css" />` が無ければ `shell-update.py` で殻を入れ替え、頁は `rising.css` の link の次の行に足す
+- **殻に主要な数字（`.rev`）が無い**（旧「合算が無ければ消す」で消していた）→「タイトル下に主要な数字を置きますか」と聞き、`references/HTML生成.md`「主要な数字」の決め方で候補を1つ出して確認を取ってから置く
 - 今後も互換を壊す変更は `CHANGELOG.md` に **移行が必要** と書き、この節に手順を足す
 
 ### 毎回やること
@@ -372,7 +373,7 @@ TRIAL の `plan` が全部 ✅ でも、AI からは進めない。ユーザー�
    - 規約の要点（次の8行をそのまま貼る）
      > ① README の取り方で取った数字を使う。同日の計測点は上書き ② **先に `LOOP_DATA` を直す**（`hist.points[]` に点を積む・`days[]`・`line[]`・`funnel`・`summary`・`metric.measured`/`window`・`updated`）③ 次に頁を最初から最後まで読み直し、前の窓の数字を見出しに関係なく全部直す（ゴール下の一文・考察・施策案・観測・数字を埋めた文章すべて）④ 前回の評価以降の LOG（`logs/LXX.md`）を読む ⑤ 各施策の現在評価（A〜E・120字以内・評価日）を見直し、`records[].grade`/`graded` と評価文の markup を揃える。窓が実施前後をまたぐ値を「実施後」と扱わない。判断できなければ理由と次に必要な観測を書き、証拠が無ければ数字と評価日を保つ ⑥ 結論1文＋折りたたみ、数列は表へ、太字は段落に1つ ⑦ `LOOP_DATA.summary` に一覧用の一文（数字入り・60字以内）を書く ⑧ 最後に**頁の中で突き合わせる**（散文の数字 ⇄ `LOOP_DATA`）。対象は `metric`・`hist`（`days`/`line`/`points`）・`funnel` の値だけで、**派生値（割合・倍率・差分）と RECORD の観測表は markup が正なので対象外**。「散文にだけ古い数字」がゼロであることを報告する
 3. **子の突き合わせ結果を確認する。** 「直したつもり」で終えない（原理5）。ゼロでなければその子に差し戻す
-4. **最後に一覧を直す。** 子を1つ（`sonnet` でよい）。**殻 `loops/index.html` の `<!-- LOOPS:BEGIN -->` 〜 `<!-- LOOPS:END -->` の中だけを直す**（行の数字・ゲージ・`.loop-sub`＝`summary`・合算の数字ブロック `.rev`）。渡すのは各頁の `LOOP_DATA` の要約（`summary`・最新点・`hist.target`・施策の件数）と、そのブロックの中身だけ
+4. **最後に一覧を直す。** 子を1つ（`sonnet` でよい）。**殻 `loops/index.html` の `<!-- LOOPS:BEGIN -->` 〜 `<!-- LOOPS:END -->` の中だけを直す**（行の数字・ゲージ・`.loop-sub`＝`summary`・タイトル下の主要な数字 `.rev`。主要な数字は README の取り方で取り直す）。渡すのは各頁の `LOOP_DATA` の要約（`summary`・最新点・`hist.target`・施策の件数）と、そのブロックの中身だけ
 5. 評価が大きく変わったループだけ LOG に変更前後と根拠を残す（子の報告から）
 6. `loops/.tmp/` は消してよい（正ではない）
 

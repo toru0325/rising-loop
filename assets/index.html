@@ -57,11 +57,13 @@
           <button class="cmt" data-sec="ループ一覧" data-loop="ループ一覧">コメント</button>
         </div>
       </div>
-      <!--=== 複数ループを合成した数字を置く場所。無いプロジェクトはこのブロックごと消す ===-->
+      <!--=== 主要な数字。このサービスで一番の数字を大きく1つ、内訳を小さく2〜4個、いつ時点かを1行。必ず置く（消さない）。
+           何を置くかは AI が決める（references/HTML生成.md「主要な数字」）。決めた理由を次の行のコメントに1行残す ===-->
+      <!--=== なぜこの数字: 売上がこの店の目的で、README の visits で毎回取れる。各ループの GOAL（再来率・新規）とは重ならない ===-->
       <div class="rev">
-        <div class="rev-total">累計売上 <b>2,313円</b></div>
-        <div class="rev-break">有料チケット 1,750円（7件 × 250円） ＋ 広告 563円</div>
-        <div class="rev-note">券は9/7まで・広告は9/6まで（配信レポートが手作業のため）・手数料を引く前</div>
+        <div class="rev-total">売上 <b>2,767,600円</b> <span class="rev-when">直近30日（8/19〜9/17）</span></div>
+        <div class="rev-break">来店 324件（新規 56・再来 268）・客単価 8,541円</div>
+        <div class="rev-note">9/17 時点（データ最終日）。取り方は `python3 scripts/report.py visits 30`</div>
       </div>
     </div>
     <div class="section tabbed t-loops">
@@ -153,7 +155,7 @@ section: ALL
 rule: まず /rising-loop を呼び出して最新の手順を読み、それに従うこと
 task: |
   rising-loop を最新版に更新して、このループを合わせて
----" title="最新版に更新して、このループを合わせる">⬆ アップデート</button><span class="brand"><b>RISING LOOP</b><i><span class="ver">v1.5.0</span> · Created by Voice App Lab</i></span></span></h3>
+---" title="最新版に更新して、このループを合わせる">⬆ アップデート</button><span class="brand"><b>RISING LOOP</b><i><span class="ver">v1.5.1</span> · Created by Voice App Lab</i></span></span></h3>
     <p class="lede">ライジング・ループは、ひとつの指標を計測し、その数字を上げるためのあらゆる施策を AI と共に進めるループシステムです。</p>
     <p class="lede">この画面は<b>見るだけ</b>です。ボタンを押しても何も実行されません。<b>指示文を作ってコピーする</b>だけ。それを<b>右のチャットに貼る</b>と AI が動き、この画面を書き換えます。</p>
     <div class="cols">
