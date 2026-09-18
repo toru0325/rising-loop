@@ -2,6 +2,8 @@
 
 リリース済みサービスの運営・改善ループを回す、Claude Code / codex 用のスキルです。
 
+**▶ 解説動画（まずこれを見るのが早いです）**: https://youtu.be/8pE4ezloXOQ
+
 ## 対象
 
 **macOS 用**です。Windows の人は WSL（Ubuntu など）の中で Claude Code とこのスキルを使ってください。WSL の中なら手順はそのまま通ります。
@@ -46,3 +48,8 @@ rising-loop が X.Y.Z になったので、このループを合わせて
 ## 以前 zip で入れた方へ
 
 上の1行を一度実行すれば、以後はこの方法に切り替わります。zip はもう配りません。
+
+## ライセンス
+
+[CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/deed.ja)（表示・非営利）。© Voice App Lab
+個人・社内での利用、改変、再配布は自由です。**商用利用（販売・有償サービスへの組み込み）は不可**。利用の際は「Voice App Lab / rising-loop」のクレジットを残してください。
