@@ -3,6 +3,13 @@
 更新したら `install.sh` がこのファイルの**先頭の項**を表示します。
 **「移行が必要」** と書かれた版は、既存プロジェクトの `loops/` に手が要ります。次に `/rising-loop` を使ったときにスキルが提案します。
 
+## 1.5.0 — 2026-09-18 ★ 移行が必要
+
+- **`LXX.md` を廃止し、ループ頁 `LXX.html` を正にした。** 値の正は頁の中の `LOOP_DATA`（md の frontmatter を吸収し、`title` `summary` `updated` `metric` `trials[]` `records[]` を持つ）、画面の散文はその写し。`loops/logs/*.md`（出来事）と `loops/README.md`（数字の取り方）は md のまま
+- **移行は「このループを合わせて」で提案する**（`assets/merge-md.py`。**1ループずつ**、1ループ＝1子で並列可）。判定は頁に `data-page-schema="2"` が無ければ 1.4.x 以前。直後に「更新」を1回走らせて散文を揃え、`LXX.md` は `loops/.tmp/` に**退避**する（削除はユーザー）
+- **突き合わせが頁の中だけになった。** 「md ⇄ html」ではなく「散文の数字 ⇄ `LOOP_DATA`」。対象は `metric`・`hist`・`funnel` の値で、派生値（割合・倍率・差分）と RECORD の観測表は markup が正
+- **`references/ファイル形式.md` を廃止。** LOG と README の規則、`loops/` のファイル一覧は `references/HTML生成.md` に移した（`LOOP_DATA` の定義と写しの規則も同じ場所）
+
 ## 1.4.0 — 2026-09-18
 
 - 使い方の帯に「⬆ アップデート」ボタン。押して右ペインに貼ると、AI が install.sh の実行 → 規約の読み直し → 「合わせて」まで通しでやる（画面のボタンから来たときだけ AI が install.sh を実行してよい）

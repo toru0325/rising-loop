@@ -11,7 +11,7 @@
 
      詳しくは ../references/HTML生成.md
      ═══════════════════════════════════════════════════════════════ -->
-<html lang="ja" data-page-schema="1">
+<html lang="ja" data-page-schema="2">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -126,10 +126,22 @@
 </section>
 </div>
 
-<!-- このループのグラフのデータ。loops/*.md と loops/logs/*.md から作られています。
-     直接編集しないでください。★ここがこの頁の唯一の「値」 -->
+<!-- このループの値。★このファイルが正（生成物ではありません）。
+     LOOP_DATA を直したら、同じターンで散文（本文の数字）も直します。 -->
 <script>
 var LOOP_DATA = {
+  //=== この頁が正。散文の数字はここからの写し。同じ値を2か所に置かない
+  id: "L01",                     // ループのID（ファイル名と同じ）
+  parent: null,                  // 親ループのID。無ければ null
+  title: "券の売上を 月15,000円 に",   // ゴールの一文。一覧の行にも写る
+  summary: "券は売れているが買い手が10人から増えていない",  // 一覧の .loop-sub に写す。60字以内
+  updated: "2026-09-03",         // この頁を最後に直した日
+  metric: {
+    name: "有料チケットの売上（1枚250円）",   // 数字の名前
+    start: 750,                  // はじめた頃の値。★いまの値は hist.points[] の最新、目標・単位は hist.target / hist.unit が正
+    measured: "2026-09-03",      // この数字を取った日
+    window: "2026-08-29〜2026-09-03（6日・3件）"   // 窓の説明
+  },
   //=== GOAL の履歴。棒＝その日の値、線＝計測点。単位はそろえる
   hist: {
     unit: "円", target: 15000,
@@ -175,7 +187,26 @@ var LOOP_DATA = {
       { name: "決済シートが出た", value:   35, unit: "件" },
       { name: "払った",           value:    7, unit: "件" }
     ]
-  }
+  },
+  //=== TRIAL（いま動かしている施策）。AI が読む正で、JS は使わない。チェックリストは markup にも出す
+  trials: [
+    { id: "T06", title: "施策の名前", status: "実現方法を決めるところ",
+      plan: ["⬜ 1. 実現方法を決める", "⬜ 2. 直す", "⬜ 3. テストを流す", "⬜ 4. 本番へ"] }
+  ],
+  //=== RECORD（終わって観察している施策）の値の部分。評価文・根拠・観測表の散文は markup が正
+  records: [
+    { id: "T01", title: "施策の名前",
+      done: "2026-09-02",                // 実施日
+      summary: "何を変えたか",             // 変更の要旨
+      aim: "狙い",                        // 何を動かすつもりだったか
+      before: "窓 8/29〜9/1: 0件",        // 実施前の数字と比較条件
+      forecast: "2週間で 7件 → 10件",      // 予想
+      forecast_at: "2026-09-02",         // 予想を書いた日
+      judge: "2026-09-16",               // 判定日
+      grade: "B",                        // 現在の評価（A〜E。未評価は "-"）
+      graded: "2026-09-18",              // 評価した日
+      verdict: null, verdict_at: null, verdict_by: null }   // 確定判定（効いた／わからなかった／効かなかった／逆効果）・日・誰が
+  ]
 };
 </script>
 <script src="rising.js"></script>

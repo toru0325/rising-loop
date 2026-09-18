@@ -4,6 +4,9 @@
   python3 split-index.py <loops ディレクトリ> [--dry-run]
   python3 split-index.py <loops ディレクトリ> --project-css   # 分割済み。退避ファイルから project.css だけ作り直す
 
+頁は schema 1（`LOOP_DATA` が `hist` と `funnel` だけを持つ 1.3.x の形）で作る。frontmatter は読まない。
+分割のあとに `merge-md.py` を1ループずつ走らせて schema 2（1.5.0）にする。
+
 出力: <loops>/index.html（殻）、<loops>/LXX.html（ループごと）、<loops>/rising.css、<loops>/rising.js、
       <loops>/project.css（元の <style> のうち rising.css に無い規則。プロジェクト独自の CSS。「合わせて」で上書きされない）
 元の index.html は <loops>/.tmp/index-before-split.html に退避する。
@@ -12,13 +15,22 @@ JS は eval しない。`var LOOP_HIST = { … }` を、文字列とコメント
 括弧の深さを数えて切り出す。書く前に次の3つを検算し、1つでも欠ければ何も書かずに止まる。
   ① 画面があるのに `LOOP_HIST` に該当キーが無いループが無いか
   ② 元の section と、頁に入った section の文字数が一致するか
-  ③ 頁に書いた `LOOP_DATA` の数字が、元の `LOOP_HIST[ID]`/`LOOP_FUNNEL[ID]` の数字と一致するか
+  ③ 元の `LOOP_HIST[ID]`/`LOOP_FUNNEL[ID]` の数字が、頁の `LOOP_DATA` に全部入っているか
+    （頁の `LOOP_DATA` は hist/funnel だけなので、数字は元のリテラルと1対1で突き合わせる）
 `LOOP_HIST`/`LOOP_FUNNEL` にあって、どの画面にも対応しないキーは警告だけ出す（止めない）。
 依存なし（python3 標準ライブラリのみ）。
 """
-import os, re, shutil, sys
+import importlib.util, os, re, shutil, sys
 
 ASSETS = os.path.dirname(os.path.abspath(__file__))
+
+
+def _load(name, fname):
+    spec = importlib.util.spec_from_file_location(name, os.path.join(ASSETS, fname))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
 
 # ── JS のオブジェクトリテラルを、括弧の深さを数えて読む ──────────────────
 
@@ -213,7 +225,7 @@ def marker_replace(tpl, name, body):
 
 
 def build_loop_page(tpl, sid, section_html, hist, funnel, title):
-    """loop.html の雛形の <section> と LOOP_DATA を差し替える"""
+    """loop.html の雛形の <section> と LOOP_DATA を差し替える（LOOP_DATA は schema 1: hist と funnel だけ）"""
     b = section_bounds(tpl, section_ids(tpl)[0])
     out = tpl[:b[0]] + section_html + tpl[b[1]:]
 
@@ -228,6 +240,10 @@ def build_loop_page(tpl, sid, section_html, hist, funnel, title):
         parts.append('  funnel: %s' % funnel)
     data = 'var LOOP_DATA = {\n' + ',\n'.join(parts) + '\n}'
     out = out[:m.start()] + data + out[end:]
+    #=== 分割で作る頁は schema 1。frontmatter を畳むのは merge-md.py（1.5.0 の移行）
+    out, n = re.subn(r'(<html[^>]*data-page-schema=")\d+(")', r'\g<1>1\g<2>', out, count=1)
+    if not n:
+        sys.exit('loop.html の雛形に data-page-schema がありません')
 
     if title:
         out = re.sub(r'<title>.*?</title>', lambda _m: '<title>%s</title>' % title, out, count=1, flags=re.S)
@@ -310,11 +326,9 @@ def main():
         #=== ③ 頁に書いた LOOP_DATA の数字と、元のリテラルの数字を突き合わせる
         src_nums = sorted(numbers((h or '') + '\n' + (f or '')))
         out_nums = sorted(numbers(loop_data_text(page)))
-        if src_nums != out_nums:
-            only_src = [x for x in src_nums if x not in out_nums]
-            only_out = [x for x in out_nums if x not in src_nums]
-            errors.append('%s: LOOP_DATA の数字が元と違います（頁に無い %s / 元に無い %s）'
-                          % (lid, only_src[:10], only_out[:10]))
+        only_src = [x for x in src_nums if x not in out_nums]
+        if only_src:
+            errors.append('%s: LOOP_DATA から数字が落ちました（頁に無い %s）' % (lid, only_src[:10]))
         rows.append((lid, len(sec), len(out_sec), npts, len(out_nums), 'あり' if f else '—'))
         pages[lid] = page
 
@@ -372,9 +386,10 @@ def main():
 
     pcss = project_css(src, rising_css)
     open(os.path.join(loops, 'project.css'), 'w', encoding='utf-8').write(pcss)
-    print('\n書きました: index.html（殻）, %s, rising.css, rising.js, project.css（独自 CSS %d 件）'
+    print('\n書きました: index.html（殻・頁は schema 1）, %s, rising.css, rising.js, project.css（独自 CSS %d 件）'
           % (', '.join('%s.html' % l for l in pages), len(_css_rules(pcss))))
     print('退避: %s' % os.path.join(tmp, 'index-before-split.html'))
+    print('次: 1ループずつ merge-md.py を走らせて 1.5.0（schema 2）にします')
 
 
 if __name__ == '__main__':
