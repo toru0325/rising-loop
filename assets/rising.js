@@ -312,6 +312,9 @@ if (IS_SHELL) (function(){
     function howtoOn(on){ howto.classList.toggle('on', on); if(!on){ try{ localStorage.setItem('howto-seen','1'); }catch(e){} } }
     document.getElementById('howto-btn').addEventListener('click', function(){ howtoOn(true); });
     document.getElementById('howto-close').addEventListener('click', function(){ howtoOn(false); });
+    //=== アップデート（帯のボタン）はコピー後に使い方を閉じる。開いたままだとトースト（z 96）がダイアログ（z 97）の下に隠れる
+    var updBtn = document.getElementById('rl-update');
+    if(updBtn) updBtn.addEventListener('click', function(){ setTimeout(function(){ howtoOn(false); }, 0); });
     howto.addEventListener('click', function(e){ if(e.target === howto) howtoOn(false); });
     document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && howto.classList.contains('on')) howtoOn(false); });
     try{ if(localStorage.getItem('howto-seen') !== '1') howtoOn(true); }catch(e){}

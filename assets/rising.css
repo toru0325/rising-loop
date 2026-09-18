@@ -67,6 +67,11 @@
   #howto h3 .brand i{margin-top:3px;color:#dfe6d6;font:500 10px -apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;
     font-style:normal;letter-spacing:.06em}
   #howto h3 .brand .ver{color:#ccef67}
+  /* アップデート。ブランド表示の左横に小さく。押すと「最新に更新して合わせて」の指示文をコピーし、右ペインが開く */
+  #howto h3 .brand-wrap{display:flex;align-items:flex-end;gap:12px}
+  #howto h3 .brand-wrap .upd-btn{margin-bottom:-3px;padding:1px 7px;border:1px solid rgba(204,239,103,.5);border-radius:999px;background:transparent;
+    color:#ccef67;font:600 10px -apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;cursor:pointer;opacity:.85}
+  #howto h3 .brand-wrap .upd-btn:hover{background:#ccef67;color:#1c2821;opacity:1}
   #howto .lede:first-of-type{margin-top:16px}
   #howto .lede{margin:6px 0 0;color:var(--sub);font-size:14px;line-height:1.65}
   #howto .howto-fig{display:block;width:100%;height:auto;margin:0;border:1px solid var(--line-soft);border-radius:10px}
