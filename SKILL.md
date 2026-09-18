@@ -153,7 +153,7 @@ grep -l 'var SESS' loops/index.html; ls loops/chat-pane.sh; ls loops/rising.js
    cat ~/.claude/skills/rising-loop/VERSION; curl -fsSL --max-time 3 https://raw.githubusercontent.com/toru0325/rising-loop/main/VERSION
    ```
    違っていたら、現在地の報告の末尾に1行だけ添える:
-   「rising-loop の新版 X.Y.Z があります。ターミナルで `curl -fsSL https://raw.githubusercontent.com/toru0325/rising-loop/main/install.sh | sh`」
+   「rising-loop の新版 X.Y.Z があります。画面の『? 使い方』→『⬆ アップデート』から更新できます」
    - ★ **AI は `install.sh` を自分で実行しない。** `~/.claude/skills` を書き換える操作なので、ユーザーに打ってもらう。
      **例外は、画面の「⬆ アップデート」から来た指示（`task: rising-loop を最新版に更新して、このループを合わせて`）だけ。** 押したのは本人なので、そのときは次の順で自分でやる:
      ① `curl -fsSL https://raw.githubusercontent.com/toru0325/rising-loop/main/install.sh | sh` を実行し、出力（版・変わったこと）をそのまま見せる。「すでに最新版」なら CDN の反映待ちの可能性を1行添える
