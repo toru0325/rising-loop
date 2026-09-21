@@ -7,6 +7,7 @@
 - [置き場所](#置き場所) — `loops/` に何があるか
 - [3つのファイル](#3つのファイル) — 殻／ループ頁／共通
 - [`LOOP_DATA` の定義](#loop_data-の定義) / [写しの規則](#写しの規則) — **値の正はここ**
+- [`loops/update/`](#loopsupdate--ループごとの更新スクリプト) — ループごとの更新スクリプト（`common.py` はスキルの写し、`LXX.py` はプロジェクトのもの）
 - [作るとき](#作るとき) / [ループを追加](#ループを追加) / [更新するとき](#更新するとき) — 手順
 - [画面の構成](#画面の構成) — 何をどこに出すか（ファネル・履歴・棒グラフ・レポート・RECORD）
 - [入力は受けない](#-入力は受けない) — ボタンは全部コピー動作
@@ -26,6 +27,9 @@ loops/
   rising.js      共通 JS。assets/ からそのままコピー
   logs/
     L01.md       L01の出来事。**出来事の正**（md のまま）。必要なときに読む
+  update/
+    common.py    LOOP_DATA の値だけを読み書きする部品。assets/loopdata.py の写し（「合わせて」で上書き）
+    L01.py       L01 の更新スクリプト。**AI が初回の更新で書き残し、次回から実行するだけ**（このプロジェクトのもの）
   .tmp/          更新作業の一時置き場。正ではない。消してよいし、git に入れない
   .chat-sessions 右ペインのセッションID。**手で編集しない**
 ```
@@ -190,6 +194,24 @@ var LOOP_DATA = {
 - **`assets/` のものを、そのまま `loops/` にコピーする。値を埋めない**（原理7: 規則はスキルに、値はループに）
 - 「このループを合わせて」では**ファイルごと上書き**される。**プロジェクト側で書き換えない**（書き換えても次の「合わせて」で消える）
 
+### `loops/update/` — ループごとの更新スクリプト
+
+「更新」で `LOOP_DATA` の値を書く計算は、同じループなら毎回同じ。**AI が初回の更新で Python に残し、次回からは親が実行するだけ**にする（`SKILL.md`「数字を更新し、施策を再評価する」手順 A/B）。
+
+```
+loops/update/
+  common.py    スキルの assets/loopdata.py の写し。load / save / merge_days / add_point。「合わせて」（shell-update.py）で上書きされる。★プロジェクト側で書き換えない
+  L01.py       L01 の計算。README のコマンドを subprocess で叩き、LOOP_DATA の値（days[] line[] points[] metric updated）を書き換える。★このプロジェクトのもの。「合わせて」は触らない
+```
+
+- `LXX.py` の中身は自由（python3 標準ライブラリのみ）。決まっているのは入口と出口だけ: `d = load('loops/LXX.html')` で dict、値を直して `save('loops/LXX.html', d, dry_run=…)`。使い方の例は `common.py` の先頭にある
+- `save` は**値だけ**を元の位置に書き戻す。`//===` コメント・キーの並び・数値の桁・`LOOP_DATA` の外（`data-page-schema`・markup）は変えない。書く前に `loops/.tmp/LXX-before-update.html` に退避し、差分の表を出す。`--dry-run`（`dry_run=True`）は表だけ
+- `save` が書くのは値。**`summary`・`points[].note`・散文・評価文は子が書く**（`LOOP_DATA` の値は触らせない）
+- ★ **`LOOP_DATA` の計算（窓・分母・単価）を変えたら `update/LXX.py` も直す。** 片方だけ直すと次回ずれる
+- スクリプトが失敗した回（出力の形が変わった・コマンドが無い）は初回扱い。子が更新し、スクリプトも直す
+- `cwd` はプロジェクトの根（`python3 loops/update/LXX.py`）。README のコマンドがその前提で書かれている
+- 実行すると `loops/update/__pycache__/` ができる。正ではない。消してよいし、git に入れない
+
 ## 作るとき
 
 1. 殻 ← `../assets/index.html` をコピーし、**CONST ブロック**（`PROJECT_DIR` `SERVICE_NAME` `PANES`）を埋め、**LOOPS ブロック**の一覧をループのぶんだけ書く
@@ -226,7 +248,7 @@ var LOOP_DATA = {
 
 | 何を直したか | どのファイル |
 |---|---|
-| そのループの数字・本文 | `loops/LXX.html`（**そのループの子が直接直す**。殻と他の頁は開かない）。**先に `LOOP_DATA`、次に散文** |
+| そのループの数字・本文 | `loops/LXX.html`（**そのループの子が直接直す**。殻と他の頁は開かない）。**先に `LOOP_DATA`、次に散文**。`loops/update/LXX.py` があれば `LOOP_DATA` の値はそれが書き、子は散文だけ |
 | 一覧の行・ゲージ・`.loop-sub`・合算 `.rev` | 殻の `<!-- LOOPS:BEGIN -->` 〜 `<!-- LOOPS:END -->` の中だけ |
 | 共通の見た目・挙動 | `assets/` の `rising.css` `rising.js` を直してから配る。**プロジェクト側で直さない** |
 

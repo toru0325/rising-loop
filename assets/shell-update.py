@@ -5,7 +5,8 @@
 
 いまの殻から保存する2か所（CONST ブロック・LOOPS ブロック）を取り、
 assets/index.html の同じマーカーの中に入れて書き直す。
-共通ファイル rising.css / rising.js / chat-pane.sh は assets/ のもので上書きする。
+共通ファイル rising.css / rising.js / chat-pane.sh / update/common.py（assets/loopdata.py の写し）は assets/ のもので上書きする
+（loops/update/ が無ければ作る。ループごとの update/LXX.py はプロジェクトのものなので触らない）。
 ループ頁 LXX.html は触らない。ただし data-page-schema が雛形と違えば警告を出す。
 元の殻は <loops>/.tmp/index-before-update.html に退避する。
 依存なし（python3 標準ライブラリのみ）。
@@ -13,8 +14,9 @@ assets/index.html の同じマーカーの中に入れて書き直す。
 import glob, os, re, shutil, sys
 
 ASSETS = os.path.dirname(os.path.abspath(__file__))
-#=== 共通ファイル。値を埋めずに、そのままコピーする
-COMMON = ('rising.css', 'rising.js', 'chat-pane.sh')
+#=== 共通ファイル。値を埋めずに、そのままコピーする（assets/ 側の名前, loops/ 側の置き場所）
+COMMON = (('rising.css', 'rising.css'), ('rising.js', 'rising.js'), ('chat-pane.sh', 'chat-pane.sh'),
+          ('loopdata.py', 'update/common.py'))
 
 
 def block(html, name):
@@ -92,10 +94,12 @@ def main():
     os.makedirs(tmp, exist_ok=True)
     shutil.copy2(path, os.path.join(tmp, 'index-before-update.html'))
     open(path, 'w', encoding='utf-8').write(out)
-    for f in COMMON:
-        shutil.copy2(os.path.join(ASSETS, f), os.path.join(loops, f))
+    for src, dst in COMMON:
+        d = os.path.join(loops, dst)
+        os.makedirs(os.path.dirname(d), exist_ok=True)
+        shutil.copy2(os.path.join(ASSETS, src), d)
 
-    print('\n上書き: index.html（殻）, %s' % ', '.join(COMMON))
+    print('\n上書き: index.html（殻）, %s' % ', '.join(dst for _, dst in COMMON))
     print('退避: %s' % os.path.join(tmp, 'index-before-update.html'))
 
 
