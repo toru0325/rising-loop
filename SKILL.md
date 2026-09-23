@@ -103,6 +103,7 @@ grep -l 'var SESS' loops/index.html; ls loops/chat-pane.sh; ls loops/rising.js
   - 次に `loops/index.html` の使い方の帯にある版（`v1.2.3` など）を見る。**スキルの `VERSION` と同じなら「読み直しました。合わせ済みです」と1行で終える。** 違うときだけ以下をやる
   - やることは①ループ頁の形式を最新に ②共通ファイルと殻を入れ替える ③下の版ごとの移行。終わったら何を変えたかを3行で報告する
   - ★ ②の中身: **共通ファイル `rising.css` `rising.js` `chat-pane.sh` `update/common.py`（`assets/loopdata.py` の写し）を `assets/` のものでそのまま上書き**（値を埋めない）。**殻は `python3 ~/.claude/skills/rising-loop/assets/shell-update.py loops/`**（CONST ブロックと LOOPS ブロックだけを引き継いで入れ替え、共通ファイル4つも同時に上書きする。`loops/update/` が無ければ作る。**ループごとの `update/LXX.py` は触らない**）。**ループ頁 `LXX.html` は触らない**——**構造版 `data-page-schema` が上がる版（1.5.0 など）だけ**、その版の移行手順で直す（違っていれば `shell-update.py` が警告を出す）
+  - ★ `shell-update.py` は各ループ頁の**古いところ**も一覧で出す（決まった文言が無い・共通部品が無い・どの CSS にも定義が無いクラス）。版が離れていると、共通ファイルは上書きされるのに頁の markup だけ古いまま残る。**スクリプトは直さない。** 出たものをユーザーに見せ、直すかを聞いてから直す（原理3）
   - 触らないもの: ループ固有の中身（各頁の `LOOP_DATA` と本文・ID・`PROJECT_DIR`・`PANES`・各 `LXX.html`）
 - **1.3.0（画面の分割）**: `loops/rising.js` が無ければ 1.2.x の単一ファイル形式。**移行を提案して止まる。勝手に実行しない**（原理3）
   1. `python3 ~/.claude/skills/rising-loop/assets/split-index.py loops/ --dry-run` を実行し、検算の表（どの頁に何が入るか・数字が落ちていないか）をユーザーに見せる

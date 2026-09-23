@@ -493,13 +493,19 @@
   @media(max-width:600px){ .rv-col b{font-size:10.5px} .rv-labels span{font-size:9.5px} }
   .lede{margin:0;font-size:16.5px;font-weight:700;color:var(--ink);line-height:1.7}
   .sub-lede{margin:5px 0 0;color:var(--sub);font-size:14px;line-height:1.8}
+  /* 折りたたみ。★見出しは「押せる」と分かる形にする（左に ＋ の四角。開くと緑の －）。
+     小さな三角だけだと押せる気がしない、と実際に言われた（2026-09-23） */
   .fold{margin-top:10px;color:var(--sub);font-size:13px;line-height:1.75}
-  .fold>summary{cursor:pointer;color:var(--dim);font-size:12.5px;list-style:none;
-    display:inline-flex;align-items:center;gap:6px}
+  .fold>summary{cursor:pointer;color:var(--sub);font-size:13.5px;font-weight:600;list-style:none;
+    display:flex;align-items:center;gap:9px;padding:4px 0}
   .fold>summary::-webkit-details-marker{display:none}
-  .fold>summary::before{content:"\25B8";color:var(--dim);font:11px ui-monospace,monospace}
-  .fold[open]>summary::before{content:"\25BE"}
-  .fold .fd-b{margin-top:7px;padding-left:2px}
+  .fold>summary::before{content:"＋";display:inline-flex;align-items:center;justify-content:center;
+    flex:0 0 auto;width:18px;height:18px;border:1px solid var(--line);border-radius:4px;
+    background:var(--surface-2);color:var(--good);font:700 12px/1 ui-monospace,monospace}
+  .fold>summary:hover{color:var(--good)}
+  .fold>summary:hover::before{border-color:var(--good)}
+  .fold[open]>summary::before{content:"－";background:var(--good);border-color:var(--good);color:#fff}
+  .fold .fd-b{margin-top:6px;margin-left:27px}
   .fold b{color:var(--ink);font-weight:600}
   /*=== 日ごとの数列は文章に埋めず、そろえた表にする ===*/
   .dtbl{margin-top:8px;display:grid;grid-template-columns:auto repeat(3,1fr);
