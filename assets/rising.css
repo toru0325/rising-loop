@@ -558,6 +558,14 @@
   .rl-none{padding:9px 11px;border-radius:8px;background:var(--surface-2);
     border:1px dashed var(--line);color:var(--dim);font-size:12.5px}
   .rl svg{display:block;width:100%;height:auto}
+  /* ★viewBox の図は「幅100%」だと画面が広いほど縦も伸びる（1650px 幅でツリーマップが
+     825px の高さになった）。縦の上限を max-width で決める＝ viewBox の縦横比 × 上限の高さ。
+     文字も viewBox の単位なので、これで大きくなりすぎるのも止まる */
+  .rl-treemap svg{max-width:500px}   /* 300x150 → 縦 250px まで */
+  .rl-area    svg{max-width:500px}   /* 300x120 → 縦 200px まで */
+  .rl-slope   svg{max-width:400px}   /* 260x130 → 縦 200px まで */
+  .rl-venn    svg{max-width:390px}   /* 260x120 → 縦 180px まで */
+  .rl-scatter svg{max-width:470px}   /* 280x130 → 縦 218px まで */
 
   /* ── bullet（軸つきブレット）いま・目標・まえ を1本の目盛りに ── */
   .rl-bullet .ax{position:relative;height:14px;margin-bottom:3px}
@@ -580,11 +588,6 @@
   .rl-bullet .lg{margin-top:22px;margin-bottom:-20px;color:var(--sub);font-size:12.5px;line-height:1.7}
   .rl-bullet .lg b{font:700 15px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--bad)}
   .rl-bullet .lg b.ok{color:var(--good)}
-
-  /* ── waffle（100マス）割合を粒で。1〜99% ── */
-  .rl-waffle .gr{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;max-width:200px}
-  .rl-waffle .gr i{aspect-ratio:1;border-radius:2px;background:var(--line-soft)}
-  .rl-waffle .gr i.on{background:var(--good)}
 
   /* ── stack（帯100%）2つ以上に分ける。帯を並べると前後が見える ── */
   .rl-stack .rl-band{display:flex;height:32px;border-radius:6px;overflow:hidden;margin-top:4px}
@@ -610,14 +613,8 @@
   .rl-dumbbell .r.up .b{background:var(--good)}
   .rl-dumbbell .r .v{color:var(--sub);font:700 12.5px ui-monospace,SFMono-Regular,Menlo,monospace}
 
-  /* ── queue（待ち行列）段が3〜4。ファネルより軽い ── */
-  .rl-queue .gr{display:flex;gap:6px;flex-wrap:wrap}
-  .rl-queue .gr .st{flex:1;min-width:66px;text-align:center;padding:9px 6px;border-radius:8px;
-    background:var(--surface-2);border:1px solid var(--line-soft)}
-  .rl-queue .gr .st b{display:block;font:700 18px ui-monospace,SFMono-Regular,Menlo,monospace}
-  .rl-queue .gr .st span{color:var(--dim);font-size:11px;line-height:1.5}
-  .rl-queue .gr .st.last{background:#fdf6f5;border-color:#e3b5ae}
-  .rl-queue .gr .st.last b{color:var(--bad)}
+  /* ── funnel（段が減っていく）中身は rising.js が実寸の SVG で描く ── */
+  .rl-funnel{margin-top:4px}
 
   /* ── donut（粒）1%未満。中に母数 ── */
   .rl-donut{display:flex;align-items:center;gap:20px;flex-wrap:wrap}

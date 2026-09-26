@@ -707,6 +707,10 @@ if (!IS_SHELL) (function(){
       }
     }
 
+    //=== ★ファネルは施策の中でも使う（data-rl の t:"funnel"）。同じ絵を2回書かないため、
+    //===   描き手を1つだけ外に出す。呼ぶ側は {stages:[{name,value,unit}], note} を渡す
+    window.RL_FUNNEL = drawFunnel;
+
     function drawAll(){
       if (!DATA.funnel) return;
       document.querySelectorAll('[data-funnel]').forEach(function(box){
@@ -775,12 +779,14 @@ if (!IS_SHELL) (function(){
       h += '<div class="ax">' + ticks(max, n, d.unit) + '</div><div class="tr">';
       for (var i = 1; i < n; i++) h += '<i class="g" style="left:' + (i / n * 100) + '%"></i>';
       h += '<i class="val' + (ok ? ' ok' : '') + '" style="width:' + pc(d.now, max).toFixed(1) + '%"></i>';
+      //=== ★札は印の真ん中に置くので、0% や 100% ぴったりだと半分が枠の外に出る。
+      //===   両端を 1〜99% に寄せる（右端は 1.6.x の頁で、左端は was:0 で実際にはみ出した）
+      var edge = function(v){ return Math.max(1, Math.min(99, pc(v, max))).toFixed(1); };
       if (d.was != null)
-        h += '<i class="was" style="left:' + pc(d.was, max).toFixed(1) + '%"><em>'
+        h += '<i class="was" style="left:' + edge(d.was) + '%"><em>'
            + esc(d.wasLabel || 'まえ') + ' ' + num(d.was, d.unit) + '</em></i>';
       if (d.aim != null)
-        //=== 右端ぴったりだとラベルが枠から出る。99% に寄せる（1.6.x の頁で実際にはみ出した）
-        h += '<i class="aim" style="left:' + Math.min(99, pc(d.aim, max)).toFixed(1) + '%"><em>'
+        h += '<i class="aim" style="left:' + edge(d.aim) + '%"><em>'
            + esc(d.aimLabel || '目標') + ' ' + num(d.aim, d.unit) + '</em></i>';
       h += '</div>';
       //=== ★ゴールの枠のように、いまと目標が図の左右に大きく出ている場所では lg:false で凡例を消す。
@@ -789,13 +795,6 @@ if (!IS_SHELL) (function(){
         h += '<div class="lg">' + esc(d.nowLabel || 'いま') + ' <b' + (ok ? ' class="ok"' : '') + '>'
            + num(d.now, d.unit) + '</b>' + (d.lead ? '　' + esc(d.lead) : '') + '</div>';
       return h;
-    }
-
-    /* ── 2. waffle（100マス）割合を粒で。1〜99% ── */
-    function waffle(d){
-      var on = Math.round(d.pct), h = '';
-      for (var i = 0; i < 100; i++) h += '<i' + (i < on ? ' class="on"' : '') + '></i>';
-      return ttl(d.title) + '<div class="gr">' + h + '</div>' + note(d.note);
     }
 
     /* ── 3. rank（横棒ランキング）0件も行として残る ── */
@@ -871,13 +870,13 @@ if (!IS_SHELL) (function(){
         + note(d.note);
     }
 
-    /* ── 8. queue（待ち行列）段が3〜4。ファネルより軽い ── */
-    function queue(d){
-      var st = d.steps || [];
-      return ttl(d.title) + '<div class="gr">' + st.map(function(s, i){
-        return '<div class="st' + (i === st.length - 1 ? ' last' : '') + '"><b>' + fmt(n0(s.v)) + '</b>'
-             + '<span>' + esc(s.k) + '</span></div>';
-      }).join('') + '</div>' + note(d.note);
+    /* ── 8. funnel（段が減っていく）ゴールでも施策でも使う ── */
+    //=== 描くのは rising.js のファネル1本だけ（window.RL_FUNNEL）。ここでは中身を渡すだけ。
+    //===   ★段の数では選ばない。「桁が変わるほど減るか」で選ぶ（3段で10倍減る施策がある）
+    function funnelSpec(d){
+      return { note: d.note || '', stages: (d.stages || []).map(function(x){
+        return { name: x.k || x.name, value: n0(x.v != null ? x.v : x.value), unit: x.unit || d.unit || '' };
+      }) };
     }
 
     /* ── 9. pie（円）全体を3〜5に分ける ── */
@@ -1044,15 +1043,15 @@ if (!IS_SHELL) (function(){
     }
 
     var KINDS = {
-      bullet: bullet, waffle: waffle, rank: rank, stack: stack, cal: cal,
-      dumbbell: dumbbell, hist: hist, queue: queue, pie: pie, donut: donut,
+      bullet: bullet, rank: rank, stack: stack, cal: cal,
+      dumbbell: dumbbell, hist: hist, pie: pie, donut: donut,
       treemap: treemap, area: area, slope: slope, venn: venn, scatter: scatter
     };
     //=== 一覧を受け取る図は、その一覧が空なら「まだ数字がありません」を出す。
     //===   ★空の箱を出さない。出すと「図が壊れた」のか「数字が無い」のか画面で見分けられない
     var NEED = {
       rank:'rows', stack:'bands', cal:'days', dumbbell:'rows', hist:'bins',
-      queue:'steps', pie:'slices', treemap:'cells', area:'series', slope:'rows', scatter:'pts'
+      funnel:'stages', pie:'slices', treemap:'cells', area:'series', slope:'rows', scatter:'pts'
     };
 
     function drawViz(){
@@ -1063,6 +1062,13 @@ if (!IS_SHELL) (function(){
           //=== 黙って空にしない。JSON が壊れていることが画面で分かるようにする
           el.className = 'rl';
           el.innerHTML = '<div class="rl-none">data-rl の JSON が読めません（' + esc(e.message) + '）</div>';
+          return;
+        }
+        //=== ファネルだけは描き手が element に直接書く（SVG を実寸で描くため）
+        if (spec && spec.t === 'funnel' && window.RL_FUNNEL){
+          el.className = 'rl rl-funnel';
+          el.innerHTML = '';
+          window.RL_FUNNEL(el, funnelSpec(spec));
           return;
         }
         var f = KINDS[spec && spec.t];
@@ -1094,4 +1100,12 @@ if (!IS_SHELL) (function(){
     clearTimeout(t);
     t = setTimeout(function(){ (window.LOOP_REDRAWS || []).forEach(function(f){ f(); }); }, 120);
   });
+
+  //=== ★折りたたみを開いたときも描き直す。閉じているあいだは幅が0で、
+  //===   実寸で描く図（ファネル・折れ線）は「描かずに戻る」ので、開いても空のままになる。
+  //===   toggle はバブリングしないので capture で拾う
+  document.addEventListener('toggle', function(e){
+    if (!e.target || e.target.tagName !== 'DETAILS' || !e.target.open) return;
+    (window.LOOP_REDRAWS || []).forEach(function(f){ f(); });
+  }, true);
 })();
