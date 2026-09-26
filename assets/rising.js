@@ -564,10 +564,26 @@ if (!IS_SHELL) (function(){
       return ls.slice(-10);
     }
 
+    //=== 「前の計測から入ったこと」の一覧。★ここは放っておくと文字の塊になる。
+    //===   1回の更新で5〜8行増え、どれも同じ重さで並ぶので、どれを読めばいいか分からない。
+    //===   ふせぎ方は2つだけ:
+    //===     ① 日付が全部同じなら列をやめる（9/26 が7回並んでも読む役に立たない）
+    //===     ② 先頭2行だけ出して、残りは畳む
+    //===   ★これは「大事な順に書く」規約とセット。1行目に「なぜ動いたか」を書く
+    var REC_SHOW = 2;
     function recList(head, rows){
       if (!rows || !rows.length) return "";
-      return '<div class="hr-head">'+head+'</div><ul>' +
-        rows.map(function(r){ return '<li><b>'+r[0]+'</b><span>'+r[1]+'</span></li>'; }).join("") + '</ul>';
+      var one = rows.every(function(r){ return r[0] === rows[0][0]; }) ? rows[0][0] : null;
+      var li = function(r){
+        return '<li>' + (one ? '' : '<b>' + r[0] + '</b>') + '<span>' + r[1] + '</span></li>';
+      };
+      var top = rows.slice(0, REC_SHOW), rest = rows.slice(REC_SHOW);
+      var h = '<div class="hr-head">' + head + (one ? ' <em>' + one + '</em>' : '') + '</div>'
+            + '<ul>' + top.map(li).join('') + '</ul>';
+      if (rest.length)
+        h += '<details class="fold rec-more"><summary>ほか ' + rest.length + ' 件</summary>'
+           + '<ul>' + rest.map(li).join('') + '</ul></details>';
+      return h;
     }
 
     var box = document.querySelector('[data-hist]');
@@ -586,7 +602,13 @@ if (!IS_SHELL) (function(){
     function render(){
       var p = d.points[cur];
       //=== 日付と値は上のゲージが持っている。ここに出すと同じことを2回言うことになる
-      elNote.textContent = p.note || "";
+      //=== ★ note の \n は改行として出す。1行が100字を超えると、13px の灰色の塊になる。
+      //===   innerHTML は使わない（テキストのまま扱い、<br> だけを自分で足す）
+      elNote.textContent = '';
+      String(p.note || '').split('\n').forEach(function(line, i){
+        if (i) elNote.appendChild(document.createElement('br'));
+        elNote.appendChild(document.createTextNode(line));
+      });
       //=== ⚠️ 注意書きは innerHTML の中に入れる。afterend で足すと render のたびに増える
       drawChart(elChart, d.points, d.target, d.unit, cur, daysFor(d, p), d.dayUnit, d.dayTarget, d.dayTargetUnit, d.dualAxis, d.line, d.targetLabel);
       var head = cur === 0 ? "この計測までに入ったこと" : "前の計測から、この計測までに入ったこと";
@@ -693,6 +715,376 @@ if (!IS_SHELL) (function(){
     }
     drawAll();
     (window.LOOP_REDRAWS = window.LOOP_REDRAWS || []).push(drawAll);
+  })();
+
+
+  /* ══════════════════════════════════════════════════════════════════
+     図の部品（1.7.0）。data-rl を読んで中身を組み立てる
+     ------------------------------------------------------------------
+     ★ 頁に書くのは1行だけ。SVG も div の入れ子も書かない。
+         <div class="rl" data-rl='{"t":"bullet","max":24,"now":1.37,"aim":24,"unit":"円"}'></div>
+     ★ どの t を使うかはデータの形で決まる（references/HTML生成.md の引き金の表）。
+       センスで選ばない。表に無い形のときだけ、その場で描いてよい。
+     ★ ここに無い図を手で SVG で描くと、版が離れたときに部品とずれる。
+       1.6.x では見本・頁・rising.js に3種類のファネルが生えた。だから1本にする。
+     ★ 値だけを差し替えるので、update/LXX.py からも触れる（data-rl は JSON）。
+     ══════════════════════════════════════════════════════════════════ */
+  (function(){
+    //=== 並びの色。濃い→薄いの順。SEQ（ファネル）とは別。内訳は「上が多い」が読めればよい
+    var C = ['#52751f', '#7d9c48', '#a7c184', '#c9d3bd', '#dfe6d6'];
+    var BAD = '#b95448', INK = '#1c2821', DIM = '#7c8b80', SOFT = '#dfe6d6';
+    var MONO = 'ui-monospace,SFMono-Regular,Menlo,monospace';
+
+    //=== ★画面に出る文字はここを必ず通す。data-rl は AI が書くので、
+    //===   単位やラベルに < や " が混ざると markup が壊れる。' も属性に入るので落とす
+    function esc(s){
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+    //=== 0除算を出さない。母数が 0 のループは実際にある（初日・0件）
+    function pc(v, max){ return !max ? 0 : Math.max(0, Math.min(100, n0(v) / max * 100)); }
+    function mx(a){ return a.reduce(function(m, v){ return v > m ? v : m; }, 0); }
+    //=== ★数字はここを必ず通す。キーが無い・null・文字列でも 0 になる。
+    //===   通さないと fmt(undefined) が画面に "NaN" と出る（ベン図で実際に出た）
+    function n0(v){ var x = +v; return isFinite(x) ? x : 0; }
+    //=== 単位も esc を通す。通さないと d.unit の "<em>円" がそのまま markup になる
+    function num(v, unit){ return fmt(n0(v)) + (unit ? esc(unit) : ''); }
+    function ttl(s){ return s ? '<div class="rl-ttl">' + esc(s) + '</div>' : ''; }
+    function note(s){ return s ? '<div class="rl-note">' + esc(s) + '</div>' : ''; }
+    function key(items){
+      return '<div class="rl-key">' + items.map(function(it){
+        return '<span><i style="background:' + it.c + '"></i>' + esc(it.k) + '</span>';
+      }).join('') + '</div>';
+    }
+    //=== 目盛りの値。刻みは 4 が既定（0 と max を含めて5本）
+    function ticks(max, n, unit){
+      var out = '';
+      for (var i = 0; i <= n; i++){
+        var v = max * i / n;
+        out += '<span style="left:' + (i / n * 100) + '%">' + (i ? num(v, unit) : '0') + '</span>';
+      }
+      return out;
+    }
+
+    /* ── 1. bullet（軸つきブレット）いま・目標・まえ を1本の目盛りに ── */
+    //=== ①道 と ②軸つき棒 を1つにしたもの。目盛りが入るので差が何倍でも潰れない
+    function bullet(d){
+      var max = d.max != null ? d.max : Math.max(d.aim || 0, d.now || 0, d.was || 0);
+      var n = d.ticks || 4, ok = !!d.ok, h = '';
+      h += '<div class="ax">' + ticks(max, n, d.unit) + '</div><div class="tr">';
+      for (var i = 1; i < n; i++) h += '<i class="g" style="left:' + (i / n * 100) + '%"></i>';
+      h += '<i class="val' + (ok ? ' ok' : '') + '" style="width:' + pc(d.now, max).toFixed(1) + '%"></i>';
+      if (d.was != null)
+        h += '<i class="was" style="left:' + pc(d.was, max).toFixed(1) + '%"><em>'
+           + esc(d.wasLabel || 'まえ') + ' ' + num(d.was, d.unit) + '</em></i>';
+      if (d.aim != null)
+        //=== 右端ぴったりだとラベルが枠から出る。99% に寄せる（1.6.x の頁で実際にはみ出した）
+        h += '<i class="aim" style="left:' + Math.min(99, pc(d.aim, max)).toFixed(1) + '%"><em>'
+           + esc(d.aimLabel || '目標') + ' ' + num(d.aim, d.unit) + '</em></i>';
+      h += '</div>';
+      //=== ★ゴールの枠のように、いまと目標が図の左右に大きく出ている場所では lg:false で凡例を消す。
+      //===   同じ数字を2回言わない（1.6.x の頁で「いま」が3か所に出ていた）
+      if (d.lg !== false)
+        h += '<div class="lg">' + esc(d.nowLabel || 'いま') + ' <b' + (ok ? ' class="ok"' : '') + '>'
+           + num(d.now, d.unit) + '</b>' + (d.lead ? '　' + esc(d.lead) : '') + '</div>';
+      return h;
+    }
+
+    /* ── 2. waffle（100マス）割合を粒で。1〜99% ── */
+    function waffle(d){
+      var on = Math.round(d.pct), h = '';
+      for (var i = 0; i < 100; i++) h += '<i' + (i < on ? ' class="on"' : '') + '></i>';
+      return ttl(d.title) + '<div class="gr">' + h + '</div>' + note(d.note);
+    }
+
+    /* ── 3. rank（横棒ランキング）0件も行として残る ── */
+    //=== ④内訳 と A内訳ランキング を1つにしたもの。0 が消えないのはこの図だけ。
+    //===   ★中身は既存の .rv-h をそのまま出す。1.3.x からある横棒で、プレイルームで28か所使っている。
+    //===     ここで別の markup を作ると、同じ絵が2通りになる（ファネルで起きたのと同じこと）
+    function rank(d){
+      var rows = d.rows || [], max = mx(rows.map(function(r){ return n0(r.v); }));
+      return ttl(d.title) + '<div class="rv-h">' + rows.map(function(r, i){
+        var v = n0(r.v);
+        //=== 先頭だけ濃い緑、あとは薄い（.rv-h に赤は無いので bad は見ない）
+        return '<div class="k">' + esc(r.k) + '</div>'
+             + '<div class="t"><i class="' + (i === 0 && v ? '' : 'dim') + '" style="width:'
+             + pc(v, max).toFixed(1) + '%"></i></div>'
+             + '<div class="v">' + fmt(v) + esc(d.unit || '') + '</div>';
+      }).join('') + '</div>' + note(d.note);
+    }
+
+    /* ── 4. stack（帯100%）2つ以上に分ける。帯を並べると前後が見える ── */
+    function stack(d){
+      return (d.bands || []).map(function(b){
+        var parts = b.parts || [], sum = parts.reduce(function(s, p){ return s + (+p.v || 0); }, 0);
+        return ttl(b.title) + '<div class="rl-band">' + parts.map(function(p, i){
+          var w = pc(p.v, sum);
+          //=== 幅が細いと文字が入らない。8% 未満はラベルを落として色だけ残す
+          return '<span style="width:' + w.toFixed(1) + '%;background:' + (p.c || C[i % C.length]) + '">'
+               + (w >= 8 ? esc(p.k) + ' ' + fmt(n0(p.v)) + (d.unit || '') : '') + '</span>';
+        }).join('') + '</div>';
+      }).join('') + note(d.note);
+    }
+
+    /* ── 5. cal（カレンダー）曜日のクセ。濃いほど多い ── */
+    function cal(d){
+      var days = d.days || [], max = mx(days.map(function(x){ return n0(x.v); })), h = '';
+      (d.head || ['月','火','水','木','金','土','日']).forEach(function(w){ h += '<b>' + esc(w) + '</b>'; });
+      days.forEach(function(x){
+        var a = max ? n0(x.v) / max : 0;
+        h += '<i title="' + esc(x.d) + ' ' + num(x.v, d.unit) + '" style="background:rgba(82,117,31,'
+           + (0.10 + a * 0.90).toFixed(2) + ')"></i>';
+      });
+      return ttl(d.title) + '<div class="gr">' + h + '</div>' + note(d.note);
+    }
+
+    /* ── 6. dumbbell（前 → いま）項目ごとに点を2つ置いて線でつなぐ ── */
+    function dumbbell(d){
+      var rows = d.rows || [];
+      var max = d.max != null ? d.max : mx(rows.reduce(function(a, r){ return a.concat([n0(r.a), n0(r.b)]); }, []));
+      return ttl(d.title) + rows.map(function(r){
+        var A = pc(r.a, max), B = pc(r.b, max), up = n0(r.b) >= n0(r.a);
+        return '<div class="r' + (up ? ' up' : '') + '"><span class="k">' + esc(r.k) + '</span>'
+             + '<span class="tr"><i class="ln" style="left:' + Math.min(A, B).toFixed(1)
+             + '%;width:' + Math.abs(B - A).toFixed(1) + '%"></i>'
+             + '<i class="a" style="left:' + A.toFixed(1) + '%"></i>'
+             + '<i class="b" style="left:' + B.toFixed(1) + '%"></i></span>'
+             + '<span class="v">' + num(r.a, d.unit) + ' → ' + num(r.b, d.unit) + '</span></div>';
+      }).join('') + note(d.note);
+    }
+
+    /* ── 7. hist（ヒストグラム）ばらつき。平均では消える形 ── */
+    //=== ★中身は既存の .rv-bars / .rv-col / .rv-labels をそのまま出す（縦棒。1.3.x からある）。
+    //===   いちばん高い山だけ濃くする。どこが多いかを目で拾えるようにする
+    function hist(d){
+      var bins = d.bins || [], max = mx(bins.map(function(b){ return n0(b.v); }));
+      return ttl(d.title)
+        + '<div class="rv-bars">' + bins.map(function(b){
+            var v = n0(b.v);
+            return '<div class="rv-col' + (max && v === max ? ' on' : '') + '"><b>' + fmt(v) + '</b>'
+                 + '<i style="height:' + pc(v, max).toFixed(1) + '%"></i></div>';
+          }).join('') + '</div>'
+        + '<div class="rv-labels">' + bins.map(function(b){
+            return '<span' + (max && n0(b.v) === max ? ' class="on"' : '') + '>' + esc(b.k) + '</span>';
+          }).join('') + '</div>'
+        + note(d.note);
+    }
+
+    /* ── 8. queue（待ち行列）段が3〜4。ファネルより軽い ── */
+    function queue(d){
+      var st = d.steps || [];
+      return ttl(d.title) + '<div class="gr">' + st.map(function(s, i){
+        return '<div class="st' + (i === st.length - 1 ? ' last' : '') + '"><b>' + fmt(n0(s.v)) + '</b>'
+             + '<span>' + esc(s.k) + '</span></div>';
+      }).join('') + '</div>' + note(d.note);
+    }
+
+    /* ── 9. pie（円）全体を3〜5に分ける ── */
+    //=== 三角関数だけ。d3 が読めなくても描ける
+    function arc(cx, cy, r, a0, a1){
+      var x0 = cx + r * Math.cos(a0), y0 = cy + r * Math.sin(a0);
+      var x1 = cx + r * Math.cos(a1), y1 = cy + r * Math.sin(a1);
+      var big = (a1 - a0) > Math.PI ? 1 : 0;
+      return 'M' + cx + ' ' + cy + ' L' + x0.toFixed(2) + ' ' + y0.toFixed(2)
+           + ' A' + r + ' ' + r + ' 0 ' + big + ' 1 ' + x1.toFixed(2) + ' ' + y1.toFixed(2) + ' Z';
+    }
+    function pie(d){
+      var sl = d.slices || [], sum = sl.reduce(function(s, x){ return s + n0(x.v); }, 0);
+      var a = -Math.PI / 2, s = '<svg viewBox="0 0 120 120">', k = [];
+      if (!sum) return '<div class="rl-none">まだ数字がありません</div>';
+      sl.forEach(function(x, i){
+        var c = x.c || C[i % C.length], a2 = a + n0(x.v) / sum * Math.PI * 2;
+        s += '<path d="' + arc(60, 60, 54, a, a2) + '" fill="' + c + '"/>';
+        k.push({ k: x.k + ' ' + Math.round(n0(x.v) / sum * 100) + '%', c: c });
+        a = a2;
+      });
+      return ttl(d.title) + '<div class="rl-pie">' + s + '</svg>' + key(k) + '</div>' + note(d.note);
+    }
+
+    /* ── 10. donut（粒）1%未満。中に母数 ── */
+    //=== ⑥点 の置き換え。円周を dasharray で切るだけなので、0.5% でも線が残る
+    function donut(d){
+      var total = n0(d.total), hit = n0(d.hit), R = 50, L = 2 * Math.PI * R;
+      var on = total ? Math.max(1.2, L * hit / total) : 0;   //=== 細すぎて消えないよう最低 1.2
+      var s = '<svg viewBox="0 0 130 130">'
+        + '<circle cx="65" cy="65" r="' + R + '" fill="none" stroke="' + SOFT + '" stroke-width="17"/>'
+        + '<circle cx="65" cy="65" r="' + R + '" fill="none" stroke="' + BAD + '" stroke-width="17"'
+        + ' stroke-dasharray="' + on.toFixed(2) + ' ' + L.toFixed(0) + '" transform="rotate(-90 65 65)"/>'
+        + '<text x="65" y="62" text-anchor="middle" font-size="25" font-weight="700" fill="' + INK + '" font-family="' + MONO + '">'
+        + fmt(total) + '</text>'
+        + '<text x="65" y="79" text-anchor="middle" font-size="11" fill="' + DIM + '">' + esc(d.totalLabel || '') + '</text>'
+        + '<text x="65" y="97" text-anchor="middle" font-size="12" font-weight="700" fill="' + BAD + '" font-family="' + MONO + '">'
+        + esc(d.hitLabel || ('うち ' + fmt(hit))) + '</text></svg>';
+      var tx = (d.lines || []).map(function(l){ return esc(l); }).join('<br>');
+      return ttl(d.title) + '<div class="rl-donut">' + s + (tx ? '<div class="tx">' + tx + '</div>' : '') + '</div>' + note(d.note);
+    }
+
+    /* ── 11. treemap（面積で内訳）大きさの差が激しいとき ── */
+    //=== d3.treemap（矩形の敷き詰め）を使う。d3 は loop.html が必ず読むので退避は持たない
+    function treemap(d){
+      var cells = (d.cells || []).filter(function(c){ return n0(c.v) > 0; });
+      if (!cells.length) return '<div class="rl-none">まだ数字がありません</div>';
+      var W = 300, H = 150;
+      var root = d3.hierarchy({ children: cells }).sum(function(x){ return n0(x.v); })
+                   .sort(function(a, b){ return b.value - a.value; });
+      d3.treemap().size([W, H]).paddingInner(2)(root);
+      var s = '<svg viewBox="0 0 ' + W + ' ' + H + '">';
+      root.leaves().forEach(function(n, i){
+        var w = n.x1 - n.x0, h = n.y1 - n.y0, c = C[i % C.length], fg = i < 2 ? '#fff' : INK;
+        s += '<rect x="' + n.x0.toFixed(1) + '" y="' + n.y0.toFixed(1) + '" width="' + w.toFixed(1)
+           + '" height="' + h.toFixed(1) + '" fill="' + c + '"/>';
+        //=== 小さい枠に文字を入れると読めない。幅52・高さ30 を下回ったら出さない
+        if (w > 52 && h > 30){
+          s += '<text x="' + (n.x0 + 7).toFixed(1) + '" y="' + (n.y0 + 18).toFixed(1)
+             + '" font-size="11" fill="' + fg + '">' + esc(n.data.k) + '</text>'
+             + '<text x="' + (n.x0 + 7).toFixed(1) + '" y="' + (n.y0 + 35).toFixed(1)
+             + '" font-size="13" font-weight="700" fill="' + fg + '" font-family="' + MONO + '">'
+             + num(n.data.v, d.unit) + '</text>';
+        }
+      });
+      return ttl(d.title) + s + '</svg>' + note(d.note);
+    }
+
+    /* ── 12. area（面グラフ）合計の推移と、その内訳 ── */
+    function area(d){
+      var ser = d.series || [], labels = d.labels || [];
+      var n = Math.max.apply(null, ser.map(function(s){ return (s.vals || []).length; }).concat([1]));
+      var tot = [], i, j;
+      for (i = 0; i < n; i++){
+        var t = 0;
+        for (j = 0; j < ser.length; j++) t += n0(ser[j].vals && ser[j].vals[i]);
+        tot.push(t);
+      }
+      var max = mx(tot) || 1, W = 300, H = 120, PB = 16;
+      var X = function(i){ return n < 2 ? W / 2 : i / (n - 1) * W; };
+      var Y = function(v){ return (H - PB) - (H - PB) * (v / max); };
+      var base = new Array(n).fill(0), s = '<svg viewBox="0 0 ' + W + ' ' + H + '">', k = [];
+      ser.forEach(function(sr, si){
+        var up = [], dn = [];
+        for (i = 0; i < n; i++){
+          var v = base[i] + n0(sr.vals && sr.vals[i]);
+          up.push(X(i).toFixed(1) + ' ' + Y(v).toFixed(1));
+          dn.unshift(X(i).toFixed(1) + ' ' + Y(base[i]).toFixed(1));
+          base[i] = v;
+        }
+        var c = sr.c || C[si % C.length];
+        s += '<polygon points="' + up.concat(dn).join(' ') + '" fill="' + c + '"/>';
+        k.push({ k: sr.k, c: c });
+      });
+      s += '<line x1="0" y1="' + (H - PB) + '" x2="' + W + '" y2="' + (H - PB) + '" stroke="#c9d3bd"/>';
+      labels.forEach(function(l, i){
+        if (!l) return;
+        s += '<text x="' + X(i).toFixed(1) + '" y="' + (H - 4) + '" font-size="9.5" fill="' + DIM
+           + '" text-anchor="middle">' + esc(l) + '</text>';
+      });
+      return ttl(d.title) + s + '</svg>' + key(k) + note(d.note);
+    }
+
+    /* ── 13. slope（傾き）2時点だけ。順位が入れ替わったか ── */
+    function slope(d){
+      var rows = d.rows || [], W = 260, H = 130, PT = 22, PB = 12;
+      var max = d.max != null ? d.max
+              : mx(rows.reduce(function(a, r){ return a.concat([n0(r.a), n0(r.b)]); }, [])) || 1;
+      var Y = function(v){ return PT + (H - PT - PB) * (1 - v / max); };
+      var s = '<svg viewBox="0 0 ' + W + ' ' + H + '">'
+        + '<text x="70" y="12" font-size="10" fill="' + DIM + '" text-anchor="end">' + esc(d.left || 'まえ') + '</text>'
+        + '<text x="190" y="12" font-size="10" fill="' + DIM + '">' + esc(d.right || 'いま') + '</text>';
+      rows.forEach(function(r, i){
+        var up = n0(r.b) >= n0(r.a), c = up ? C[0] : BAD;
+        var y0 = Y(n0(r.a)), y1 = Y(n0(r.b));
+        s += '<line x1="70" y1="' + y0.toFixed(1) + '" x2="190" y2="' + y1.toFixed(1)
+           + '" stroke="' + c + '" stroke-width="2"/>'
+           + '<circle cx="70" cy="' + y0.toFixed(1) + '" r="4" fill="' + c + '"/>'
+           + '<circle cx="190" cy="' + y1.toFixed(1) + '" r="4" fill="' + c + '"/>'
+           + '<text x="64" y="' + (y0 + 3.5).toFixed(1) + '" font-size="10" fill="' + INK
+           + '" text-anchor="end">' + esc(r.k) + ' ' + num(r.a, d.unit) + '</text>'
+           + '<text x="197" y="' + (y1 + 3.5).toFixed(1) + '" font-size="10" fill="' + c + '">'
+           + num(r.b, d.unit) + '</text>';
+      });
+      return ttl(d.title) + s + '</svg>' + note(d.note);
+    }
+
+    /* ── 14. venn（ベン図）2つの集まりの重なり ── */
+    function venn(d){
+      var a = d.a || {}, b = d.b || {}, both = n0(d.both);
+      var s = '<svg viewBox="0 0 260 120">'
+        + '<circle cx="100" cy="60" r="48" fill="' + C[0] + '" opacity=".3"/>'
+        + '<circle cx="160" cy="60" r="42" fill="' + BAD + '" opacity=".3"/>'
+        + '<text x="60" y="56" font-size="11" fill="' + INK + '" text-anchor="middle">' + esc(a.k) + '</text>'
+        + '<text x="60" y="74" font-size="14" fill="' + INK + '" text-anchor="middle" font-family="' + MONO + '">' + fmt(n0(a.v)) + '</text>'
+        + '<text x="130" y="64" font-size="14" fill="#8e3c31" text-anchor="middle" font-family="' + MONO + '">' + fmt(both) + '</text>'
+        + '<text x="200" y="56" font-size="11" fill="' + INK + '" text-anchor="middle">' + esc(b.k) + '</text>'
+        + '<text x="200" y="74" font-size="14" fill="' + INK + '" text-anchor="middle" font-family="' + MONO + '">' + fmt(n0(b.v)) + '</text>'
+        + '</svg>';
+      return ttl(d.title) + s + note(d.note);
+    }
+
+    /* ── 15. scatter（散布図）2つの数字に関係があるか ── */
+    //=== 1件ずつの生データが要る。日ごとの集計しか無いループでは使えない
+    function scatter(d){
+      var p = d.pts || [], W = 280, H = 130, PL = 30, PB = 18, PT = 8, PR = 6;
+      if (!p.length) return '<div class="rl-none">まだ数字がありません</div>';
+      var xs = p.map(function(o){ return n0(o.x); }), ys = p.map(function(o){ return n0(o.y); });
+      var xM = mx(xs) || 1, yM = mx(ys) || 1;
+      var X = function(v){ return PL + (W - PL - PR) * (v / xM); };
+      var Y = function(v){ return (H - PB) - (H - PB - PT) * (v / yM); };
+      var s = '<svg viewBox="0 0 ' + W + ' ' + H + '">'
+        + '<line x1="' + PL + '" y1="' + (H - PB) + '" x2="' + (W - PR) + '" y2="' + (H - PB) + '" stroke="#c9d3bd"/>'
+        + '<line x1="' + PL + '" y1="' + PT + '" x2="' + PL + '" y2="' + (H - PB) + '" stroke="#c9d3bd"/>'
+        + '<text x="2" y="' + (PT + 6) + '" font-size="9" fill="' + DIM + '">' + esc(d.y || '') + '</text>'
+        + '<text x="' + (W - PR) + '" y="' + (H - 4) + '" font-size="9" fill="' + DIM + '" text-anchor="end">'
+        + esc(d.x || '') + '</text>';
+      p.forEach(function(o){
+        s += '<circle cx="' + X(n0(o.x)).toFixed(1) + '" cy="' + Y(n0(o.y)).toFixed(1)
+           + '" r="' + (o.out ? 5 : 4) + '" fill="' + (o.out ? BAD : C[2]) + '"'
+           + (o.k ? ' title="' + esc(o.k) + '"' : '') + '/>';
+      });
+      return ttl(d.title) + s + '</svg>' + note(d.note);
+    }
+
+    var KINDS = {
+      bullet: bullet, waffle: waffle, rank: rank, stack: stack, cal: cal,
+      dumbbell: dumbbell, hist: hist, queue: queue, pie: pie, donut: donut,
+      treemap: treemap, area: area, slope: slope, venn: venn, scatter: scatter
+    };
+    //=== 一覧を受け取る図は、その一覧が空なら「まだ数字がありません」を出す。
+    //===   ★空の箱を出さない。出すと「図が壊れた」のか「数字が無い」のか画面で見分けられない
+    var NEED = {
+      rank:'rows', stack:'bands', cal:'days', dumbbell:'rows', hist:'bins',
+      queue:'steps', pie:'slices', treemap:'cells', area:'series', slope:'rows', scatter:'pts'
+    };
+
+    function drawViz(){
+      document.querySelectorAll('.rl[data-rl]').forEach(function(el){
+        var spec;
+        try { spec = JSON.parse(el.getAttribute('data-rl')); }
+        catch (e){
+          //=== 黙って空にしない。JSON が壊れていることが画面で分かるようにする
+          el.className = 'rl';
+          el.innerHTML = '<div class="rl-none">data-rl の JSON が読めません（' + esc(e.message) + '）</div>';
+          return;
+        }
+        var f = KINDS[spec && spec.t];
+        if (!f){
+          el.className = 'rl';
+          el.innerHTML = '<div class="rl-none">知らない図です: ' + esc(spec && spec.t) + '</div>';
+          return;
+        }
+        var need = NEED[spec.t];
+        if (need && !(spec[need] && spec[need].length)){
+          el.className = 'rl rl-' + spec.t;
+          el.innerHTML = (spec.title ? '<div class="rl-ttl">' + esc(spec.title) + '</div>' : '')
+                       + '<div class="rl-none">まだ数字がありません</div>';
+          return;
+        }
+        //=== クラスは毎回組み直す。t を書き換えたときに前の見た目が残らない
+        el.className = 'rl rl-' + spec.t;
+        el.innerHTML = f(spec);
+      });
+    }
+    drawViz();
+    (window.LOOP_REDRAWS = window.LOOP_REDRAWS || []).push(drawViz);
   })();
 
   //=== 右ペインの開閉や画面幅の変化で iframe の幅が変わる。実寸で描いた図をまとめて描き直す。

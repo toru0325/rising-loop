@@ -276,6 +276,11 @@
                       font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
   .hist-recs .hr-head + ul + .hr-head{margin-top:12px;padding-top:12px;
                                       border-top:1px solid var(--line-soft);display:block}
+  .hist-recs .hr-head em{font-style:normal;color:var(--dim);opacity:.8}
+  /* 残りは畳む。開くまで塊にならない（1.7.0） */
+  .hist-recs .rec-more{margin-top:6px}
+  .hist-recs .rec-more > summary{font-size:12.5px;color:var(--dim)}
+  .hist-recs .rec-more > ul{margin-left:27px}
   .hist-recs ul{margin:6px 0 0;padding-left:0;list-style:none}
   .hist-recs li{display:flex;gap:12px;font-size:14.5px;color:var(--sub);padding:2px 0}
   .hist-recs li b{flex:0 0 34px;color:var(--dim);font-weight:400;
@@ -531,3 +536,104 @@
   .standalone-note{max-width:880px;margin:0 auto 14px;padding:10px 13px;border-radius:9px;
     border:1px solid var(--line);background:var(--surface-3);color:var(--sub);font-size:13.5px}
   .standalone-note a{color:#52751f;font-weight:700}
+
+  /* ══════════════════════════════════════════════════════════════════
+     図の部品（1.7.0）
+     ------------------------------------------------------------------
+     ★ 使い方は1行だけ。SVG も div の入れ子も書かない。
+         <div class="rl" data-rl='{"t":"bullet","max":24,"now":1.37,"aim":24}'></div>
+       rising.js が data-rl を読んで中身を組み立てる。ここはその見た目だけ。
+     ★ 図は「どのデータの形か」で決まる。センスで選ばない。
+       どれを使うかは references/HTML生成.md の引き金の表を見る。
+     ★ 手で SVG を描かない。描くと版が離れたときに部品とずれて、
+       直す場所が2つになる（1.6.x で実際に3種類のファネルが生えた）。
+     ★ 横棒ランキング（t:"rank"）と縦棒（t:"hist"）は、**ここに見た目を持たない**。
+       1.3.x からある .rv-h と .rv-bars / .rv-col / .rv-labels をそのまま出すため。
+       同じ絵を2通り持たない（プレイルームで .rv-h は28か所使っている）。
+     ══════════════════════════════════════════════════════════════════ */
+  .rl{margin-top:10px}
+  .rl-ttl{color:var(--dim);font:11px ui-monospace,SFMono-Regular,Menlo,monospace;margin-bottom:2px}
+  .rl-ttl+.rl-ttl,.rl-band+.rl-ttl{margin-top:11px}
+  .rl-note{margin-top:7px;color:var(--sub);font-size:12.5px;line-height:1.8}
+  .rl-none{padding:9px 11px;border-radius:8px;background:var(--surface-2);
+    border:1px dashed var(--line);color:var(--dim);font-size:12.5px}
+  .rl svg{display:block;width:100%;height:auto}
+
+  /* ── bullet（軸つきブレット）いま・目標・まえ を1本の目盛りに ── */
+  .rl-bullet .ax{position:relative;height:14px;margin-bottom:3px}
+  .rl-bullet .ax span{position:absolute;transform:translateX(-50%);white-space:nowrap;
+    color:var(--dim);font:10.5px ui-monospace,SFMono-Regular,Menlo,monospace}
+  .rl-bullet .tr{position:relative;height:30px;border-radius:5px;
+    background:var(--surface-2);border:1px solid var(--line-soft)}
+  .rl-bullet .g{position:absolute;top:0;bottom:0;width:1px;background:var(--line-soft)}
+  .rl-bullet .val{position:absolute;top:8px;bottom:8px;left:0;border-radius:3px;background:var(--bad)}
+  .rl-bullet .val.ok{background:var(--good)}
+  .rl-bullet .was{position:absolute;top:-3px;bottom:-3px;width:2px;background:#9aa79c}
+  .rl-bullet .aim{position:absolute;top:-5px;bottom:-5px;width:3px;background:var(--ink);border-radius:2px}
+  .rl-bullet .was em,.rl-bullet .aim em{position:absolute;bottom:-17px;left:50%;
+    transform:translateX(-50%);white-space:nowrap;font-style:normal;
+    font:10px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--dim)}
+  .rl-bullet .aim em{color:var(--ink);font-weight:700}
+  /* ★凡例を出さない（lg:false）ときも、まえ・目標の札のぶんだけ下を空ける。
+     空けないと次の行と重なる（L01 のゴールで実際に重なった） */
+  .rl-bullet{padding-bottom:20px}
+  .rl-bullet .lg{margin-top:22px;margin-bottom:-20px;color:var(--sub);font-size:12.5px;line-height:1.7}
+  .rl-bullet .lg b{font:700 15px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--bad)}
+  .rl-bullet .lg b.ok{color:var(--good)}
+
+  /* ── waffle（100マス）割合を粒で。1〜99% ── */
+  .rl-waffle .gr{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;max-width:200px}
+  .rl-waffle .gr i{aspect-ratio:1;border-radius:2px;background:var(--line-soft)}
+  .rl-waffle .gr i.on{background:var(--good)}
+
+  /* ── stack（帯100%）2つ以上に分ける。帯を並べると前後が見える ── */
+  .rl-stack .rl-band{display:flex;height:32px;border-radius:6px;overflow:hidden;margin-top:4px}
+  .rl-stack .rl-band span{display:flex;align-items:center;justify-content:center;
+    min-width:0;overflow:hidden;white-space:nowrap;color:#fff;
+    font:700 12px ui-monospace,SFMono-Regular,Menlo,monospace}
+
+  /* ── cal（カレンダー）曜日のクセ。濃いほど多い ── */
+  .rl-cal .gr{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;max-width:264px}
+  .rl-cal .gr i{aspect-ratio:1;border-radius:3px;background:var(--line-soft)}
+  .rl-cal .gr b{aspect-ratio:auto;text-align:center;color:var(--dim);
+    font:400 10px ui-monospace,SFMono-Regular,Menlo,monospace}
+
+  /* ── dumbbell（前 → いま）を項目ごとに線で ── */
+  .rl-dumbbell .r{display:grid;grid-template-columns:96px 1fr 128px;gap:10px;align-items:center;margin-top:9px}
+  .rl-dumbbell .r .k{text-align:right;color:var(--sub);font-size:12.5px}
+  .rl-dumbbell .r .tr{position:relative;height:18px}
+  .rl-dumbbell .r .ln{position:absolute;top:8px;height:2px;background:var(--line)}
+  .rl-dumbbell .r .a,.rl-dumbbell .r .b{position:absolute;top:3px;width:12px;height:12px;
+    border-radius:50%;margin-left:-6px}
+  .rl-dumbbell .r .a{background:var(--line)}
+  .rl-dumbbell .r .b{background:var(--bad)}
+  .rl-dumbbell .r.up .b{background:var(--good)}
+  .rl-dumbbell .r .v{color:var(--sub);font:700 12.5px ui-monospace,SFMono-Regular,Menlo,monospace}
+
+  /* ── queue（待ち行列）段が3〜4。ファネルより軽い ── */
+  .rl-queue .gr{display:flex;gap:6px;flex-wrap:wrap}
+  .rl-queue .gr .st{flex:1;min-width:66px;text-align:center;padding:9px 6px;border-radius:8px;
+    background:var(--surface-2);border:1px solid var(--line-soft)}
+  .rl-queue .gr .st b{display:block;font:700 18px ui-monospace,SFMono-Regular,Menlo,monospace}
+  .rl-queue .gr .st span{color:var(--dim);font-size:11px;line-height:1.5}
+  .rl-queue .gr .st.last{background:#fdf6f5;border-color:#e3b5ae}
+  .rl-queue .gr .st.last b{color:var(--bad)}
+
+  /* ── donut（粒）1%未満。中に母数 ── */
+  .rl-donut{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+  .rl-donut svg{flex:0 0 132px;width:132px}
+  .rl-donut .tx{flex:1;min-width:190px;color:var(--sub);font-size:12.5px;line-height:1.85}
+  .rl-donut .tx b{color:var(--ink);font:700 15px ui-monospace,SFMono-Regular,Menlo,monospace}
+
+  /* ── pie と、色の凡例（pie / area で使う） ── */
+  .rl-key{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:8px}
+  .rl-key span{display:inline-flex;align-items:center;gap:5px;color:var(--sub);font-size:12px}
+  .rl-key i{width:10px;height:10px;border-radius:2px;flex:0 0 10px}
+  .rl-pie{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+  .rl-pie svg{flex:0 0 140px;width:140px}
+  .rl-pie .rl-key{flex:1;min-width:180px;flex-direction:column;gap:5px}
+
+  @media(max-width:680px){
+    .rl-dumbbell .r{grid-template-columns:72px 1fr 104px}
+    .rl-bullet .lg{font-size:12px}
+  }
